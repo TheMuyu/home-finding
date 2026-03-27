@@ -61,7 +61,20 @@ class Listing(db.Model):
     has_dishwasher = db.Column(db.Boolean, default=False)
     size_sqm = db.Column(db.Integer, nullable=True)
     available_from = db.Column(db.Date, nullable=True)
+    available_until = db.Column(db.String(50), nullable=True)  # date string or "until_further_notice"
     images = db.Column(db.JSON, default=list)
+    # Listing character
+    home_type = db.Column(db.String(30), nullable=True)         # apartment, house, terrace_house, cottage, dorm, other
+    furnishing = db.Column(db.String(30), nullable=True)        # furnished, unfurnished, partially_furnished
+    is_shared = db.Column(db.Boolean, nullable=True)            # True=shared home, False=entire home
+    # Rent breakdown
+    service_fee_sek = db.Column(db.Integer, nullable=True)      # Qasa service fee on top of rent
+    electricity_included = db.Column(db.Boolean, nullable=True)
+    deposit_months = db.Column(db.Integer, nullable=True)
+    # House rules (JSON: {pets_allowed, smoking_allowed, wheelchair_accessible, max_tenants})
+    house_rules = db.Column(db.JSON, default=dict)
+    # All detected amenities as a list of keys, e.g. ["balcony","fridge","washing_machine"]
+    amenities = db.Column(db.JSON, default=list)
     commute_minutes = db.Column(db.Integer, nullable=True)
     commute_details = db.Column(db.JSON, default=dict)
     nearby_stops = db.Column(db.JSON, default=list)
@@ -96,7 +109,16 @@ class Listing(db.Model):
             "has_dishwasher": self.has_dishwasher,
             "size_sqm": self.size_sqm,
             "available_from": self.available_from.isoformat() if self.available_from else None,
+            "available_until": self.available_until,
             "images": self.images or [],
+            "home_type": self.home_type,
+            "furnishing": self.furnishing,
+            "is_shared": self.is_shared,
+            "service_fee_sek": self.service_fee_sek,
+            "electricity_included": self.electricity_included,
+            "deposit_months": self.deposit_months,
+            "house_rules": self.house_rules or {},
+            "amenities": self.amenities or [],
             "commute_minutes": self.commute_minutes,
             "commute_details": self.commute_details or {},
             "nearby_stops": self.nearby_stops or [],
