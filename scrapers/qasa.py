@@ -143,6 +143,41 @@ def _parse_size(text: str):
 
 # ── Next.js __NEXT_DATA__ extraction ─────────────────────────────────────────
 
+def _find_coords_in_tree(obj, depth: int = 0) -> tuple[float, float] | tuple[None, None]:
+    """
+    Recursively search a JSON tree for the first dict that contains both
+    a latitude-like key and a longitude-like key with plausible Stockholm values.
+    Returns (lat, lng) or (None, None).
+    """
+    if depth > 12 or not isinstance(obj, (dict, list)):
+        return None, None
+
+    if isinstance(obj, dict):
+        # Try direct keys on this dict
+        lat = obj.get("latitude") or obj.get("lat")
+        lng = obj.get("longitude") or obj.get("lng") or obj.get("lon")
+        if lat is not None and lng is not None:
+            try:
+                lat, lng = float(lat), float(lng)
+                # Rough bounding box for Sweden
+                if 55.0 < lat < 70.0 and 10.0 < lng < 25.0:
+                    return lat, lng
+            except (TypeError, ValueError):
+                pass
+        # Recurse into values
+        for v in obj.values():
+            lat, lng = _find_coords_in_tree(v, depth + 1)
+            if lat is not None:
+                return lat, lng
+    elif isinstance(obj, list):
+        for item in obj:
+            lat, lng = _find_coords_in_tree(item, depth + 1)
+            if lat is not None:
+                return lat, lng
+
+    return None, None
+
+
 def _extract_from_next_data(next_data: dict, data: dict):
     """Populate data dict from the Next.js __NEXT_DATA__ blob."""
     try:
@@ -224,16 +259,15 @@ def _extract_from_next_data(next_data: dict, data: dict):
                 or location.get("locality")
                 or ""
             )
-            for lat_key in ("latitude", "lat"):
-                if lat_key in location:
-                    data["lat"] = location[lat_key]
-                    break
-            for lng_key in ("longitude", "lng", "lon"):
-                if lng_key in location:
-                    data["lng"] = location[lng_key]
-                    break
         elif isinstance(location, str):
             data["address"] = location
+
+        # Coordinates — search the entire __NEXT_DATA__ tree (Qasa nests these variably)
+        if not data.get("lat") or not data.get("lng"):
+            lat, lng = _find_coords_in_tree(next_data)
+            if lat is not None:
+                data["lat"] = lat
+                data["lng"] = lng
 
         # Images
         for img_key in ("images", "photos", "pictures", "media"):
@@ -382,6 +416,61 @@ def _scrape_listing_page_dom(page, data: dict):
                     urls.append(src)
             if urls:
                 data["images"] = urls
+        except Exception:
+            pass
+
+    # ── Coordinates from JSON-LD or Leaflet tile URLs (DOM fallback) ──────────
+    if not data.get("lat") or not data.get("lng"):
+        try:
+            # 1. JSON-LD structured data (schema.org/Place or GeoCoordinates)
+            ld_texts = page.evaluate("""() =>
+                Array.from(document.querySelectorAll('script[type="application/ld+json"]'))
+                    .map(s => s.textContent)
+            """)
+            for ld_text in (ld_texts or []):
+                try:
+                    ld = json.loads(ld_text)
+                    lat, lng = _find_coords_in_tree(ld)
+                    if lat is not None:
+                        data["lat"] = lat
+                        data["lng"] = lng
+                        break
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+    if not data.get("lat") or not data.get("lng"):
+        try:
+            # 2. Leaflet map tile URLs encode z/x/y — extract map center via JS
+            coords = page.evaluate("""() => {
+                // Leaflet exposes map instances on L
+                if (window.L && window.L._instances) {
+                    const maps = Object.values(window.L._instances);
+                    if (maps.length > 0) {
+                        const c = maps[0].getCenter();
+                        return {lat: c.lat, lng: c.lng};
+                    }
+                }
+                // Also try reading tile img src to decode z/x/y
+                const tiles = document.querySelectorAll('img.leaflet-tile[src]');
+                for (const t of tiles) {
+                    const m = t.src.match(/\\/tile\\.openstreetmap\\.org\\/(\\d+)\\/(\\d+)\\/(\\d+)/);
+                    if (m) {
+                        const z = parseInt(m[1]), x = parseInt(m[2]), y = parseInt(m[3]);
+                        const n = Math.PI - 2 * Math.PI * y / Math.pow(2, z);
+                        const lat = 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+                        const lng = x / Math.pow(2, z) * 360 - 180;
+                        return {lat, lng};
+                    }
+                }
+                return null;
+            }""")
+            if coords and coords.get("lat") and coords.get("lng"):
+                lat, lng = float(coords["lat"]), float(coords["lng"])
+                if 55.0 < lat < 70.0 and 10.0 < lng < 25.0:
+                    data["lat"] = lat
+                    data["lng"] = lng
         except Exception:
             pass
 

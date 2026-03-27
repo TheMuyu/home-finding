@@ -57,6 +57,21 @@ def save_settings():
 
     settings.theme = request.form.get("theme", "light")
 
+    # Geocode work address (cache means re-saves are fast; clear coords if address changes)
+    if settings.work_address:
+        try:
+            from services.maps import geocode_address
+            result = geocode_address(settings.work_address)
+            if result:
+                settings.work_lat = result["lat"]
+                settings.work_lng = result["lng"]
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f"Could not geocode work address: {e}")
+    else:
+        settings.work_lat = None
+        settings.work_lng = None
+
     db.session.commit()
     flash("Settings saved successfully.", "success")
     return redirect(url_for("settings.settings_page"))

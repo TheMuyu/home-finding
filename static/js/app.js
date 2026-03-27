@@ -137,6 +137,10 @@ async function toggleSave(listingId, btn) {
 /* =====================================================================
    Leaflet Map
    ===================================================================== */
+// Global map state — accessed by card click handlers
+window._map = null;
+window._markerById = {}; // listingId → Leaflet marker
+
 function initMap() {
   const mapEl = document.getElementById("map");
   if (!mapEl || typeof L === "undefined") return;
@@ -149,6 +153,7 @@ function initMap() {
     zoom: 11,
     zoomControl: true,
   });
+  window._map = map;
 
   // Tile layer — OpenStreetMap
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -163,37 +168,72 @@ function initMap() {
   listings.forEach((listing) => {
     if (!listing.lat || !listing.lng) return;
 
-    const color = scoreColor(listing.ai_score);
-    const markerHtml = `<div style="
-      width: 14px; height: 14px; border-radius: 50%;
-      background: ${color}; border: 2px solid white;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-    "></div>`;
-
-    const icon = L.divIcon({
-      html: markerHtml,
-      className: "",
-      iconSize: [14, 14],
-      iconAnchor: [7, 7],
-    });
-
-    const marker = L.marker([listing.lat, listing.lng], { icon })
-      .addTo(map)
-      .bindPopup(buildPopup(listing));
-
+    const marker = createMarker(map, listing);
+    window._markerById[listing.id] = marker;
     bounds.push([listing.lat, listing.lng]);
   });
 
   if (bounds.length > 0) {
     map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
   }
+
+  // Card click → zoom map to listing
+  document.querySelectorAll("[data-listing-id]").forEach((card) => {
+    card.addEventListener("click", function (e) {
+      // Don't intercept button clicks (save star, etc.)
+      if (e.target.closest("button") || e.target.closest("a")) return;
+
+      const id = parseInt(this.dataset.listingId, 10);
+      focusListing(id);
+    });
+  });
+}
+
+function createMarker(map, listing) {
+  const color = scoreColor(listing.ai_score);
+  const markerHtml = `<div style="
+    width: 14px; height: 14px; border-radius: 50%;
+    background: ${color}; border: 2px solid white;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  "></div>`;
+
+  const icon = L.divIcon({
+    html: markerHtml,
+    className: "",
+    iconSize: [14, 14],
+    iconAnchor: [7, 7],
+  });
+
+  return L.marker([listing.lat, listing.lng], { icon })
+    .addTo(map)
+    .bindPopup(buildPopup(listing));
+}
+
+function focusListing(listingId) {
+  const marker = window._markerById[listingId];
+  const map = window._map;
+  if (!marker || !map) return;
+
+  // Zoom to marker and open its popup
+  map.setView(marker.getLatLng(), 14, { animate: true });
+  marker.openPopup();
+
+  // Highlight the card
+  document.querySelectorAll("[data-listing-id]").forEach((c) => {
+    c.classList.remove("ring-2", "ring-brand-500", "bg-blue-50", "dark:bg-blue-900/20");
+  });
+  const card = document.querySelector(`[data-listing-id="${listingId}"]`);
+  if (card) {
+    card.classList.add("ring-2", "ring-brand-500", "bg-blue-50", "dark:bg-blue-900/20");
+    card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
 }
 
 function scoreColor(score) {
-  if (score === null || score === undefined) return "#9ca3af";
-  if (score >= 70) return "#16a34a";
-  if (score >= 40) return "#ca8a04";
-  return "#dc2626";
+  if (score === null || score === undefined) return "#0ea5e9"; // blue — not yet scored
+  if (score >= 70) return "#16a34a";  // green
+  if (score >= 40) return "#ca8a04";  // yellow
+  return "#dc2626";                   // red
 }
 
 function buildPopup(listing) {
@@ -204,7 +244,7 @@ function buildPopup(listing) {
   const district = listing.district || "";
   const score = listing.ai_score !== null && listing.ai_score !== undefined
     ? `<span style="color:${scoreColor(listing.ai_score)}; font-weight:600;">AI ${listing.ai_score}</span>`
-    : "<span style='color:#9ca3af'>Not scored</span>";
+    : "<span style='color:#0ea5e9'>Not scored</span>";
   return `
     <div style="font-size:13px; min-width:160px;">
       <div style="font-weight:600; margin-bottom:4px;">${listing.title || "Listing"}</div>
