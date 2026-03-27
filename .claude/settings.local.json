@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install:*)",
+      "Bash(python -c \"from app import app; print\\(''app imports OK''\\)\")",
+      "Bash(python seed_data.py)",
+      "Bash(python -c \":*)",
+      "Bash(python -c \"from app import create_app; app = create_app\\(\\); print\\(''App created successfully''\\)\")",
+      "Bash(timeout 5 python app.py)",
+      "Bash(python -c \"from app import create_app; app = create_app\\(\\); print\\(''App created OK''\\); [print\\(f''  {r}''\\) for r in app.url_map.iter_rules\\(\\) if ''listing'' in str\\(r\\) or ''scrape'' in str\\(r\\) or ''add'' in str\\(r\\)]\")",
+      "Bash(python -c \"from scrapers.qasa import parse_amenities, extract_from_url, scrape_qasa; print\\(''Scraper imports OK''\\); r = parse_amenities\\(''lägenheten har tvättmaskin och diskmaskin''\\); print\\(''Amenity parse:'', r\\)\")",
+      "Bash(playwright install:*)",
+      "Bash(python db_migrate.py)",
+      "Bash(python -c \"from app import create_app; app = create_app\\(\\); print\\(''OK''\\)\")"
+    ]
+  }
+}

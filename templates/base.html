@@ -68,9 +68,9 @@
                    {% if request.endpoint and request.endpoint.startswith('settings.') %}bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white{% endif %}">
             Settings
           </a>
-          <a href="{{ url_for('listings_add') if false else '#' }}"
-            class="ml-2 px-4 py-2 rounded-md text-sm font-semibold bg-brand-600 hover:bg-brand-700 text-white transition-colors"
-            title="Coming in Session 2">
+          <a href="{{ url_for('listings.add_listing_page') }}"
+            class="ml-2 px-4 py-2 rounded-md text-sm font-semibold bg-brand-600 hover:bg-brand-700 text-white transition-colors
+                   {% if request.endpoint == 'listings.add_listing_page' %}opacity-90{% endif %}">
             + Add Listing
           </a>
         </div>

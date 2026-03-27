@@ -1,0 +1,47 @@
+{
+  "error": null,
+  "extracted_data": {
+    "address": "Heklagatan",
+    "available_until": "until_further_notice",
+    "deposit_months": 1,
+    "district": "Stockholm",
+    "furnishing": "unfurnished",
+    "has_dishwasher": true,
+    "has_dryer": false,
+    "has_washing_machine": false,
+    "home_type": "apartment",
+    "house_rules": {
+      "max_tenants": 2,
+      "pets_allowed": false,
+      "smoking_allowed": false,
+      "wheelchair_accessible": false
+    },
+    "images": [
+      "https://img.qasa.se/unsafe/1200x1200/smart/https://qasa-static-prod.s3-eu-west-1.amazonaws.com/img/b2852cb410cda605df457332d6b51c371ca98beabff541d699e08bf8b5f25bd1.jpg",
+      "https://img.qasa.se/unsafe/300x300/smart/https://qasa-static-prod.s3-eu-west-1.amazonaws.com/img/eb392f09fdec67edbcc9717cd582bdc44f0186b2671e8fe019ee030f73f49093.jpg",
+      "https://img.qasa.se/unsafe/300x300/smart/https://qasa-static-prod.s3-eu-west-1.amazonaws.com/img/6943781882735278162bbef8532a6c8859673efef7e2c42ff52015a64d29d77f.jpg",
+      "https://img.qasa.se/unsafe/300x300/smart/https://qasa-static-prod.s3-eu-west-1.amazonaws.com/img/635c79fbdf4162451b220cae141bf1dabae958ec566fcd1626cc4446f64e4c1c.jpg",
+      "https://img.qasa.se/unsafe/300x300/smart/https://qasa-static-prod.s3-eu-west-1.amazonaws.com/img/6532f438d8377238da8fa183aa7ab95e413fb8c2058d6d4c0c8bb3a7e1ef0334.jpg",
+      "https://img.qasa.se/unsafe/350x350/smart/https://qasa-static-prod.s3-eu-west-1.amazonaws.com/img/b2852cb410cda605df457332d6b51c371ca98beabff541d699e08bf8b5f25bd1.jpg",
+      "https://img.qasa.se/unsafe/350x350/smart/https://qasa-static-prod.s3-eu-west-1.amazonaws.com/img/eb392f09fdec67edbcc9717cd582bdc44f0186b2671e8fe019ee030f73f49093.jpg",
+      "https://img.qasa.se/unsafe/350x350/smart/https://qasa-static-prod.s3-eu-west-1.amazonaws.com/img/6943781882735278162bbef8532a6c8859673efef7e2c42ff52015a64d29d77f.jpg",
+      "https://img.qasa.se/unsafe/350x350/smart/https://qasa-static-prod.s3-eu-west-1.amazonaws.com/img/635c79fbdf4162451b220cae141bf1dabae958ec566fcd1626cc4446f64e4c1c.jpg",
+      "https://img.qasa.se/unsafe/350x350/smart/https://qasa-static-prod.s3-eu-west-1.amazonaws.com/img/6532f438d8377238da8fa183aa7ab95e413fb8c2058d6d4c0c8bb3a7e1ef0334.jpg"
+    ],
+    "price_sek": 0,
+    "rooms": 2,
+    "service_fee_sek": 773,
+    "size_sqm": 48,
+    "source": "qasa",
+    "title": "Heklagatan, Stockholm",
+    "url": "https://qasa.com/se/en/home/1335235"
+  },
+  "final_url": "https://qasa.com/se/en/home/1335235",
+  "has_next_data": false,
+  "http_status": 200,
+  "next_data_keys": [],
+  "next_data_page_props_keys": [],
+  "next_data_snippet": null,
+  "page_title": "Heklagatan, Stockholm - Apartment | Qasa",
+  "requested_url": "https://qasa.com/se/en/home/1335235"
+}

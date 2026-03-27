@@ -59,6 +59,41 @@ async function seedData() {
   }
 }
 
+async function scrapeQasa() {
+  const btn = document.getElementById("scrape-btn");
+  const text = document.getElementById("scrape-btn-text");
+  const icon = document.getElementById("scrape-icon");
+  const spinner = document.getElementById("scrape-spinner");
+
+  if (btn) btn.disabled = true;
+  if (text) text.textContent = "Scraping…";
+  if (icon) icon.classList.add("hidden");
+  if (spinner) spinner.classList.remove("hidden");
+
+  showToast("Scraping Qasa listings — this may take a few minutes…", "info", 10000);
+
+  try {
+    const res = await fetch("/scrape", { method: "POST" });
+    const data = await res.json();
+    if (res.ok) {
+      const msg = `Found ${data.new} new listing${data.new !== 1 ? "s" : ""}` +
+        (data.duplicates ? `, ${data.duplicates} duplicate${data.duplicates !== 1 ? "s" : ""} skipped` : "") +
+        (data.errors ? `, ${data.errors} error${data.errors !== 1 ? "s" : ""}` : "") + ".";
+      showToast(msg, data.new > 0 ? "success" : "info", 5000);
+      if (data.new > 0) setTimeout(() => window.location.reload(), 1200);
+    } else {
+      showToast("Scrape failed: " + (data.error || "unknown error"), "error");
+    }
+  } catch (err) {
+    showToast("Scrape request failed. Is the server running?", "error");
+  } finally {
+    if (btn) btn.disabled = false;
+    if (text) text.textContent = "Refresh Listings";
+    if (icon) icon.classList.remove("hidden");
+    if (spinner) spinner.classList.add("hidden");
+  }
+}
+
 async function clearSeedData() {
   if (!confirm("Remove all seed listings? This cannot be undone.")) return;
   try {

@@ -2,7 +2,7 @@
 
 ## Project Overview
 A Flask-based web application to help find and evaluate rental apartments in Stockholm.
-The app scrapes listings from Qasa.se (and supports manual entry), analyzes each listing
+The app scrapes listings from Qasa.com (and supports manual entry), analyzes each listing
 using location data (Google Maps + Trafiklab SL), scores them with Claude AI, and presents
 results in a clean interactive UI with map visualization.
 
@@ -34,7 +34,7 @@ stockholm-finder/
 │   ├── models.py           # SQLAlchemy models
 │   └── db.py               # DB init and session
 ├── scrapers/
-│   └── qasa.py             # Qasa.se: bulk scraper + single URL extractor
+│   └── qasa.py             # Qasa.com: bulk scraper + single URL extractor
 ├── services/
 │   ├── maps.py             # Geocoding: Nominatim (free) or Google Maps (optional)
 │   ├── transit.py          # Trafiklab SL API calls
@@ -222,11 +222,13 @@ Include a `clear_seed_data()` function.
 ---
 
 ### SESSION 2 — Qasa Scraper + Manual Entry
-**Goal:** Scrape listings from Qasa.se and provide manual entry fallback.
+**Goal:** Scrape listings from Qasa.com and provide manual entry fallback.
 
 **Tasks:**
-1. **Qasa.se scraper (qasa.py):**
+1. **Qasa.com scraper (qasa.py):**
    - Use Playwright for JS rendering
+   - Search URL: https://qasa.com/se/en/find-home/stockholm (with filter params)
+   - Listing URL format: https://qasa.com/se/en/home/{id}
    - Search URL builder with filters (price, rooms, Stockholm area)
    - Parse: title, price, rooms, address, description, images, URL
    - Handle pagination (cap at 50 listings per run)

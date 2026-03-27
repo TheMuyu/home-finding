@@ -27,11 +27,25 @@
         <button
           id="seed-btn"
           onclick="seedData()"
-          class="text-xs px-3 py-1.5 rounded bg-brand-600 hover:bg-brand-700 text-white font-medium transition-colors flex items-center gap-1.5">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          class="text-xs px-3 py-1.5 rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
           </svg>
-          Seed Sample Data
+          Seed
+        </button>
+        <button
+          id="scrape-btn"
+          onclick="scrapeQasa()"
+          class="text-xs px-3 py-1.5 rounded bg-brand-600 hover:bg-brand-700 text-white font-medium transition-colors flex items-center gap-1.5">
+          <svg id="scrape-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          <svg id="scrape-spinner" class="hidden animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+          </svg>
+          <span id="scrape-btn-text">Refresh Listings</span>
         </button>
       </div>
     </div>
@@ -78,10 +92,43 @@
                 {{ listing.district }}{% if listing.address %} · {{ listing.address.split(',')[0] }}{% endif %}
               </p>
 
+              <!-- Home type + furnishing badges -->
+              {% if listing.home_type or listing.furnishing %}
+              <div class="flex items-center gap-1.5 mt-1 flex-wrap">
+                {% if listing.home_type %}
+                <span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 capitalize">
+                  {{ listing.home_type.replace('_', ' ') }}
+                </span>
+                {% endif %}
+                {% if listing.furnishing %}
+                <span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 capitalize">
+                  {{ listing.furnishing.replace('_', ' ') }}
+                </span>
+                {% endif %}
+                {% if listing.is_shared == true %}
+                <span class="text-xs px-1.5 py-0.5 rounded bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">
+                  Shared
+                </span>
+                {% elif listing.is_shared == false %}
+                <span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                  Entire home
+                </span>
+                {% endif %}
+              </div>
+              {% endif %}
+
               <div class="flex items-center gap-2 mt-1.5 flex-wrap">
-                <!-- Price -->
+                <!-- Price + service fee -->
                 <span class="text-sm font-semibold text-gray-900 dark:text-white">
-                  {{ "{:,}".format(listing.price_sek) }} kr/mo
+                  {% if listing.service_fee_sek %}
+                    {{ "{:,}".format(listing.price_sek + listing.service_fee_sek) }} kr/mo
+                    <span class="text-xs font-normal text-gray-400"
+                          title="Rent {{ '{:,}'.format(listing.price_sek) }} + fee {{ '{:,}'.format(listing.service_fee_sek) }} kr">
+                      (incl. fee)
+                    </span>
+                  {% else %}
+                    {{ "{:,}".format(listing.price_sek) }} kr/mo
+                  {% endif %}
                 </span>
                 <!-- Rooms + size -->
                 <span class="text-xs text-gray-500 dark:text-gray-400">
@@ -111,15 +158,28 @@
                 </span>
                 {% endif %}
 
-                <!-- Amenity icons -->
-                {% if listing.has_washing_machine %}
-                <span title="Washing machine" class="text-xs text-gray-400 dark:text-gray-500">W</span>
-                {% endif %}
-                {% if listing.has_dryer %}
-                <span title="Dryer" class="text-xs text-gray-400 dark:text-gray-500">D</span>
-                {% endif %}
-                {% if listing.has_dishwasher %}
-                <span title="Dishwasher" class="text-xs text-gray-400 dark:text-gray-500">DW</span>
+                <!-- All amenities -->
+                {% set amenity_labels = {
+                  "balcony": "Balcony", "rooftop_terrace": "Rooftop",
+                  "garden": "Garden", "sauna": "Sauna", "pool": "Pool",
+                  "fridge": "Fridge", "freezer": "Freezer", "microwave": "Microwave",
+                  "oven": "Oven", "stove": "Stove", "dishwasher": "Dishwasher",
+                  "washing_machine": "Washer", "tumble_dryer": "Dryer",
+                  "shower": "Shower", "bathtub": "Bathtub", "toilet": "Toilet",
+                  "elevator": "Elevator", "storage_room": "Storage",
+                  "parking": "Parking", "bike_storage": "Bike storage",
+                  "internet": "Internet", "television": "TV"
+                } %}
+                {% if listing.amenities %}
+                  {% for key in listing.amenities %}
+                  <span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                    {{ amenity_labels.get(key, key) }}
+                  </span>
+                  {% endfor %}
+                {% else %}
+                  {% if listing.has_washing_machine %}<span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">Washer</span>{% endif %}
+                  {% if listing.has_dryer %}<span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">Dryer</span>{% endif %}
+                  {% if listing.has_dishwasher %}<span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">Dishwasher</span>{% endif %}
                 {% endif %}
               </div>
             </div>
