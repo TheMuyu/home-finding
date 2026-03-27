@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block title %}Settings — Stockholm Finder{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
+    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Configure your apartment search preferences.</p>
+  </div>
+
+  <form method="POST" action="{{ url_for('settings.save_settings') }}" class="space-y-6">
+
+    <!-- Work address -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+      <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-4">Work Location</h2>
+      <div>
+        <label for="work_address" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Work Address
+        </label>
+        <input
+          type="text"
+          id="work_address"
+          name="work_address"
+          value="{{ settings.work_address or '' }}"
+          placeholder="e.g. Drottninggatan 1, Stockholm"
+          class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm transition-colors"
+        />
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          Used to calculate commute times. Geocoded automatically.
+        </p>
+      </div>
+    </div>
+
+    <!-- Budget -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+      <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-4">Budget</h2>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label for="budget_min" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Minimum (SEK/month)
+          </label>
+          <input
+            type="number"
+            id="budget_min"
+            name="budget_min"
+            value="{{ settings.budget_min }}"
+            min="0"
+            step="500"
+            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm transition-colors"
+          />
+        </div>
+        <div>
+          <label for="budget_max" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Maximum (SEK/month)
+          </label>
+          <input
+            type="number"
+            id="budget_max"
+            name="budget_max"
+            value="{{ settings.budget_max }}"
+            min="0"
+            step="500"
+            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm transition-colors"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Rooms -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+      <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-4">Apartment Size</h2>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label for="min_rooms" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Minimum Rooms
+          </label>
+          <input
+            type="number"
+            id="min_rooms"
+            name="min_rooms"
+            value="{{ settings.min_rooms }}"
+            min="1"
+            max="10"
+            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm transition-colors"
+          />
+        </div>
+        <div>
+          <label for="max_rooms" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Maximum Rooms
+          </label>
+          <input
+            type="number"
+            id="max_rooms"
+            name="max_rooms"
+            value="{{ settings.max_rooms }}"
+            min="1"
+            max="10"
+            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm transition-colors"
+          />
+        </div>
+      </div>
+      <div class="mt-4">
+        <label for="floor_min" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Minimum Floor <span class="text-gray-400 dark:text-gray-500 font-normal">(optional)</span>
+        </label>
+        <input
+          type="number"
+          id="floor_min"
+          name="floor_min"
+          value="{{ settings.floor_min or '' }}"
+          min="0"
+          placeholder="Any floor"
+          class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm transition-colors"
+        />
+      </div>
+    </div>
+
+    <!-- Commute -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+      <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-4">Commute</h2>
+      <div>
+        <label for="max_commute_minutes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Maximum Commute Time (minutes)
+        </label>
+        <div class="flex items-center gap-3">
+          <input
+            type="range"
+            id="max_commute_range"
+            min="10"
+            max="120"
+            step="5"
+            value="{{ settings.max_commute_minutes }}"
+            oninput="document.getElementById('max_commute_minutes').value = this.value; document.getElementById('commute-display').textContent = this.value + ' min'"
+            class="flex-1 h-2 appearance-none bg-gray-200 dark:bg-gray-600 rounded-full cursor-pointer accent-brand-600"
+          />
+          <span id="commute-display" class="text-sm font-semibold text-brand-600 dark:text-brand-400 w-16 text-right">
+            {{ settings.max_commute_minutes }} min
+          </span>
+        </div>
+        <input type="hidden" id="max_commute_minutes" name="max_commute_minutes" value="{{ settings.max_commute_minutes }}" />
+      </div>
+    </div>
+
+    <!-- Amenities -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+      <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-4">Required Amenities</h2>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Listings missing these will be flagged by the AI scorer.</p>
+      <div class="space-y-3">
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            name="must_have_washing_machine"
+            {% if settings.must_have_washing_machine %}checked{% endif %}
+            class="w-4 h-4 text-brand-600 border-gray-300 dark:border-gray-600 rounded focus:ring-brand-500 bg-white dark:bg-gray-700"
+          />
+          <span class="text-sm text-gray-700 dark:text-gray-300">Washing machine in apartment</span>
+        </label>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            name="must_have_dryer"
+            {% if settings.must_have_dryer %}checked{% endif %}
+            class="w-4 h-4 text-brand-600 border-gray-300 dark:border-gray-600 rounded focus:ring-brand-500 bg-white dark:bg-gray-700"
+          />
+          <span class="text-sm text-gray-700 dark:text-gray-300">Dryer in apartment</span>
+        </label>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            name="must_have_dishwasher"
+            {% if settings.must_have_dishwasher %}checked{% endif %}
+            class="w-4 h-4 text-brand-600 border-gray-300 dark:border-gray-600 rounded focus:ring-brand-500 bg-white dark:bg-gray-700"
+          />
+          <span class="text-sm text-gray-700 dark:text-gray-300">Dishwasher in apartment</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Preferred Districts -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+      <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-1">Preferred Districts</h2>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Select the Stockholm districts you'd most like to live in.</p>
+      <div class="grid grid-cols-2 gap-2">
+        {% set recommended_districts = [
+          ("Hägersten", "Calm, green, good transport"),
+          ("Älvsjö", "Quiet, nature, families"),
+          ("Enskede", "Safe, parks, classic Stockholm feel"),
+          ("Midsommarkransen", "Trendy but calm, good SL access"),
+          ("Fruängen", "Affordable, peaceful, metro access"),
+          ("Bandhagen", "Familiar area, good connections"),
+          ("Stureby", "Quiet residential, green"),
+          ("Björkhagen", "Nature, lakes, very calm"),
+        ] %}
+        {% for district, description in recommended_districts %}
+        <label class="flex items-start gap-2.5 p-2.5 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors
+          {% if district in (settings.preferred_districts or []) %}bg-brand-50 dark:bg-brand-900/20 border-brand-300 dark:border-brand-600{% endif %}">
+          <input
+            type="checkbox"
+            name="preferred_districts"
+            value="{{ district }}"
+            {% if district in (settings.preferred_districts or []) %}checked{% endif %}
+            class="w-4 h-4 mt-0.5 text-brand-600 border-gray-300 dark:border-gray-600 rounded focus:ring-brand-500 bg-white dark:bg-gray-700 flex-shrink-0"
+          />
+          <div>
+            <div class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ district }}</div>
+            <div class="text-xs text-gray-400 dark:text-gray-500">{{ description }}</div>
+          </div>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Theme -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+      <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-4">Appearance</h2>
+      <div>
+        <label for="theme" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Theme</label>
+        <select
+          id="theme"
+          name="theme"
+          onchange="applyTheme(this.value)"
+          class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm transition-colors"
+        >
+          <option value="light" {% if settings.theme == 'light' %}selected{% endif %}>Light</option>
+          <option value="dark" {% if settings.theme == 'dark' %}selected{% endif %}>Dark</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Save button -->
+    <div class="flex justify-end">
+      <button
+        type="submit"
+        class="px-6 py-2.5 rounded-lg bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2">
+        Save Settings
+      </button>
+    </div>
+
+  </form>
+</div>
+{% endblock %}

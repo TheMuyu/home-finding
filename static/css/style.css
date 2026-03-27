@@ -1,0 +1,150 @@
+/* =====================================================================
+   Stockholm Apartment Finder — Custom Styles
+   Tailwind CSS handles most styling. This file covers:
+   - CSS custom properties for light/dark mode colors
+   - Leaflet map overrides
+   - Custom range input styling
+   - Scrollbar styling
+   ===================================================================== */
+
+/* --- CSS Variables --- */
+:root {
+  --color-bg:             #f9fafb;
+  --color-bg-card:        #ffffff;
+  --color-bg-muted:       #f3f4f6;
+  --color-border:         #e5e7eb;
+  --color-text:           #111827;
+  --color-text-muted:     #6b7280;
+  --color-brand:          #0284c7;
+  --color-brand-light:    #e0f2fe;
+  --color-score-good:     #16a34a;
+  --color-score-warn:     #ca8a04;
+  --color-score-bad:      #dc2626;
+  --leaflet-tile-filter:  none;
+}
+
+html.dark {
+  --color-bg:             #111827;
+  --color-bg-card:        #1f2937;
+  --color-bg-muted:       #374151;
+  --color-border:         #374151;
+  --color-text:           #f9fafb;
+  --color-text-muted:     #9ca3af;
+  --color-brand:          #38bdf8;
+  --color-brand-light:    #0c4a6e;
+  --leaflet-tile-filter:  brightness(0.7) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+}
+
+/* --- Scrollbar (webkit) --- */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: #4b5563;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* --- Range input --- */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  background: #e5e7eb;
+}
+html.dark input[type="range"] {
+  background: #4b5563;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-brand);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.1s ease;
+}
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-brand);
+  cursor: pointer;
+  border: none;
+}
+
+/* --- Leaflet map --- */
+#map {
+  z-index: 0;
+}
+
+/* Dark mode tile filter */
+html.dark .leaflet-tile {
+  filter: var(--leaflet-tile-filter);
+}
+
+/* Leaflet popup styling */
+.leaflet-popup-content-wrapper {
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  font-family: inherit;
+}
+html.dark .leaflet-popup-content-wrapper {
+  background: #1f2937;
+  color: #f9fafb;
+}
+html.dark .leaflet-popup-tip {
+  background: #1f2937;
+}
+
+/* --- Listing card hover effect --- */
+[data-listing-id]:hover {
+  transition: background-color 0.15s ease;
+}
+
+/* --- Score badge dot --- */
+.score-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.score-dot-good  { background-color: var(--color-score-good); }
+.score-dot-warn  { background-color: var(--color-score-warn); }
+.score-dot-bad   { background-color: var(--color-score-bad); }
+.score-dot-none  { background-color: #9ca3af; }
+
+/* --- Toast notification --- */
+#toast {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+#toast.show {
+  display: block !important;
+  opacity: 1;
+  transform: translateY(0);
+}
+#toast.hide {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.toast-success { background-color: #16a34a; }
+.toast-error   { background-color: #dc2626; }
+.toast-info    { background-color: #0284c7; }
