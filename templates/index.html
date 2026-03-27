@@ -34,6 +34,18 @@
           Seed
         </button>
         <button
+          id="enrich-btn"
+          onclick="enrichAll()"
+          class="text-xs px-3 py-1.5 rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1.5"
+          title="Geocode addresses, calculate commute times, and fetch nearby POIs">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+          <span id="enrich-btn-text">Enrich</span>
+        </button>
+        <button
           id="scrape-btn"
           onclick="scrapeQasa()"
           class="text-xs px-3 py-1.5 rounded bg-brand-600 hover:bg-brand-700 text-white font-medium transition-colors flex items-center gap-1.5">
@@ -134,6 +146,12 @@
                 <span class="text-xs text-gray-500 dark:text-gray-400">
                   {{ listing.rooms }} rum{% if listing.size_sqm %} · {{ listing.size_sqm }} m²{% endif %}
                 </span>
+                <!-- Available from -->
+                {% if listing.available_from %}
+                <span class="text-xs text-gray-500 dark:text-gray-400">
+                  · From {{ listing.available_from.strftime("%d %b %Y") }}
+                </span>
+                {% endif %}
               </div>
 
               <div class="flex items-center gap-1.5 mt-1.5 flex-wrap">
@@ -230,7 +248,37 @@
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 <script>
-  // Pass listings data to JS for map markers
-  const LISTINGS_DATA = {{ listings_json | tojson }};
+  // Pass listings data to JS for map markers (var = global scope, accessible as window.LISTINGS_DATA)
+  var LISTINGS_DATA = {{ listings_json | tojson }};
+
+  async function enrichAll() {
+    const btn = document.getElementById('enrich-btn');
+    const txt = document.getElementById('enrich-btn-text');
+    btn.disabled = true;
+    txt.textContent = 'Enriching…';
+    try {
+      const resp = await fetch('/api/enrich-all', { method: 'POST' });
+      const data = await resp.json();
+      if (data.success) {
+        if (data.queued === 0) {
+          showToast('All listings already enriched.', 'info');
+          btn.disabled = false;
+          txt.textContent = 'Enrich';
+        } else {
+          showToast(`Enriching ${data.queued} listing(s)… reloading shortly.`, 'success', 8000);
+          // Wait for background enrichment then reload
+          setTimeout(() => window.location.reload(), 6000);
+        }
+      } else {
+        showToast('Enrichment failed: ' + (data.error || 'Unknown error'), 'error');
+        btn.disabled = false;
+        txt.textContent = 'Enrich';
+      }
+    } catch (e) {
+      showToast('Enrichment request failed', 'error');
+      btn.disabled = false;
+      txt.textContent = 'Enrich';
+    }
+  }
 </script>
 {% endblock %}

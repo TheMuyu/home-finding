@@ -11,7 +11,8 @@
       "Bash(python -c \"from scrapers.qasa import parse_amenities, extract_from_url, scrape_qasa; print\\(''Scraper imports OK''\\); r = parse_amenities\\(''lägenheten har tvättmaskin och diskmaskin''\\); print\\(''Amenity parse:'', r\\)\")",
       "Bash(playwright install:*)",
       "Bash(python db_migrate.py)",
-      "Bash(python -c \"from app import create_app; app = create_app\\(\\); print\\(''OK''\\)\")"
+      "Bash(python -c \"from app import create_app; app = create_app\\(\\); print\\(''OK''\\)\")",
+      "Bash(python -c \"from scrapers.qasa import extract_from_url, _find_coords_in_tree; print\\(''OK''\\); print\\(_find_coords_in_tree\\({''location'': {''latitude'': 59.33, ''longitude'': 18.07}}\\)\\)\")"
     ]
   }
 }

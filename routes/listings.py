@@ -224,6 +224,13 @@ def save_listing():
     db.session.add(listing)
     try:
         db.session.commit()
+        # Enrich in background (geocode, commute, POIs)
+        try:
+            from flask import current_app
+            from services.enrichment import enrich_listing_async
+            enrich_listing_async(current_app._get_current_object(), listing.id)
+        except Exception as e:
+            logger.warning(f"Could not start enrichment for listing {listing.id}: {e}")
         flash("Listing saved successfully!", "success")
         return redirect(url_for("listings.index"))
     except IntegrityError:
@@ -420,6 +427,15 @@ def run_scrape():
             db.session.rollback()
             logger.error(f"Failed to save scraped listing: {e}")
             error_count += 1
+
+    # Enrich all newly-saved listings in background
+    if new_count > 0:
+        try:
+            from flask import current_app
+            from services.enrichment import enrich_all_async
+            enrich_all_async(current_app._get_current_object())
+        except Exception as e:
+            logger.warning(f"Could not start bulk enrichment: {e}")
 
     return jsonify({
         "new": new_count,
