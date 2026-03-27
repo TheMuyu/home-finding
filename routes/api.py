@@ -1,6 +1,11 @@
-from flask import Blueprint, jsonify, request
+import logging
+
+from flask import Blueprint, current_app, jsonify, request
+
 from database.db import db
 from database.models import Listing
+
+logger = logging.getLogger(__name__)
 
 api_bp = Blueprint("api", __name__, url_prefix="/api")
 
@@ -76,6 +81,43 @@ def map_data():
         })
 
     return jsonify({"type": "FeatureCollection", "features": features})
+
+
+@api_bp.route("/enrich/<int:listing_id>", methods=["POST"])
+def enrich_listing(listing_id):
+    """Synchronously enrich a single listing and return what changed."""
+    listing = Listing.query.get_or_404(listing_id)
+    try:
+        from services.enrichment import enrich_listing_sync
+        summary = enrich_listing_sync(current_app._get_current_object(), listing_id)
+        listing = Listing.query.get(listing_id)
+        return jsonify({
+            "success": True,
+            "enriched": summary,
+            "listing": listing.to_dict(),
+        })
+    except Exception as e:
+        logger.error(f"Enrich endpoint failed for listing {listing_id}: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@api_bp.route("/enrich-all", methods=["POST"])
+def enrich_all_listings():
+    """Kick off background enrichment for all unenriched listings."""
+    try:
+        from services.enrichment import enrich_all_async
+        enrich_all_async(current_app._get_current_object())
+        unenriched_count = Listing.query.filter(
+            db.or_(Listing.lat.is_(None), Listing.commute_minutes.is_(None))
+        ).count()
+        return jsonify({
+            "success": True,
+            "message": f"Enrichment started for up to {unenriched_count} listings in background.",
+            "queued": unenriched_count,
+        })
+    except Exception as e:
+        logger.error(f"Enrich-all endpoint failed: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @api_bp.route("/seed", methods=["POST"])
