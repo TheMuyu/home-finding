@@ -17,6 +17,7 @@ class UserSettings(db.Model):
     must_have_washing_machine = db.Column(db.Boolean, default=False)
     must_have_dryer = db.Column(db.Boolean, default=False)
     must_have_dishwasher = db.Column(db.Boolean, default=False)
+    must_have_amenities = db.Column(db.JSON, default=list)
     preferred_districts = db.Column(db.JSON, default=list)
     max_commute_minutes = db.Column(db.Integer, default=45)
     theme = db.Column(db.String(10), default="light")
@@ -35,6 +36,7 @@ class UserSettings(db.Model):
             "must_have_washing_machine": self.must_have_washing_machine,
             "must_have_dryer": self.must_have_dryer,
             "must_have_dishwasher": self.must_have_dishwasher,
+            "must_have_amenities": self.must_have_amenities or [],
             "preferred_districts": self.preferred_districts or [],
             "max_commute_minutes": self.max_commute_minutes,
             "theme": self.theme,

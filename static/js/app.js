@@ -77,24 +77,24 @@ async function clearSeedData() {
 }
 
 async function scrapeQasa() {
-  const btn  = document.getElementById("scrape-btn");
+  const btn = document.getElementById("scrape-btn");
   const text = document.getElementById("scrape-btn-text");
   const icon = document.getElementById("scrape-icon");
   const spin = document.getElementById("scrape-spinner");
 
-  if (btn)  btn.disabled = true;
+  if (btn) btn.disabled = true;
   if (text) text.textContent = "Scraping…";
   if (icon) icon.classList.add("hidden");
   if (spin) spin.classList.remove("hidden");
   showToast("Scraping Qasa listings — this may take a few minutes…", "info", 10000);
 
   try {
-    const res  = await fetch("/scrape", { method: "POST" });
+    const res = await fetch("/scrape", { method: "POST" });
     const data = await res.json();
     if (res.ok) {
       const msg = `Found ${data.new} new listing${data.new !== 1 ? "s" : ""}` +
         (data.duplicates ? `, ${data.duplicates} duplicate${data.duplicates !== 1 ? "s" : ""} skipped` : "") +
-        (data.errors     ? `, ${data.errors} error${data.errors !== 1 ? "s" : ""}` : "") + ".";
+        (data.errors ? `, ${data.errors} error${data.errors !== 1 ? "s" : ""}` : "") + ".";
       showToast(msg, data.new > 0 ? "success" : "info", 5000);
       if (data.new > 0) setTimeout(() => window.location.reload(), 1200);
     } else {
@@ -103,7 +103,7 @@ async function scrapeQasa() {
   } catch {
     showToast("Scrape request failed. Is the server running?", "error");
   } finally {
-    if (btn)  btn.disabled = false;
+    if (btn) btn.disabled = false;
     if (text) text.textContent = "Refresh";
     if (icon) icon.classList.remove("hidden");
     if (spin) spin.classList.add("hidden");
@@ -112,9 +112,9 @@ async function scrapeQasa() {
 
 async function toggleSave(listingId, btn) {
   try {
-    const res  = await fetch(`/listings/${listingId}/save`, { method: "POST" });
+    const res = await fetch(`/listings/${listingId}/save`, { method: "POST" });
     const data = await res.json();
-    const svg  = btn.querySelector("svg");
+    const svg = btn.querySelector("svg");
     if (data.is_saved) {
       btn.classList.add("text-yellow-400");
       btn.classList.remove("text-gray-300", "dark:text-gray-600");
@@ -152,7 +152,7 @@ async function saveNotes(listingId, value) {
 
 async function updateStatus(listingId, status) {
   try {
-    const res  = await fetch(`/listings/${listingId}/status`, {
+    const res = await fetch(`/listings/${listingId}/status`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ application_status: status }),
@@ -162,6 +162,25 @@ async function updateStatus(listingId, status) {
       // Update data attribute for filter
       const wrapper = document.querySelector(`[data-listing-id="${listingId}"]`);
       if (wrapper) wrapper.dataset.status = status;
+
+      // Update the status badge below the thumbnail
+      const badge = wrapper && wrapper.querySelector(".status-thumb-badge");
+      if (badge) {
+        const base = "status-thumb-badge text-[10px] px-1.5 py-0.5 rounded-full font-medium capitalize w-20 text-center truncate";
+        const colorMap = {
+          accepted: "bg-green-100 text-green-700",
+          rejected: "bg-red-100 text-red-600",
+          waiting: "bg-purple-100 text-purple-700",
+          applied: "bg-blue-100 text-blue-700",
+        };
+        if (status === "not_applied") {
+          badge.className = base + " hidden";
+        } else {
+          badge.className = base + " " + (colorMap[status] || colorMap.applied);
+          badge.textContent = status.replace("_", " ");
+        }
+      }
+
       showToast("Status updated.", "success", 1500);
     } else {
       showToast("Could not update status: " + (data.error || ""), "error");
@@ -171,17 +190,61 @@ async function updateStatus(listingId, status) {
   }
 }
 
+async function reEnrich(listingId) {
+  const btn = document.getElementById(`reenrich-btn-${listingId}`);
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Fetching data…";
+  }
+  try {
+    const res = await fetch(`/api/enrich/${listingId}`, { method: "POST" });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      const e = data.enriched || {};
+      const parts = [];
+      if (e.geocoded) parts.push("location");
+      if (e.commute) parts.push("commute");
+      if (e.stops) parts.push("nearby stops");
+      if (e.pois) parts.push("POIs");
+      showToast(parts.length ? `Updated: ${parts.join(", ")}.` : "Already up to date.", "success");
+      // Reload page so all template sections (commute, stops, POIs) re-render with new data
+      setTimeout(() => window.location.reload(), 800);
+    } else {
+      showToast("Re-enrich failed: " + (data.error || "unknown error"), "error");
+      if (btn) { btn.disabled = false; btn.innerHTML = `<svg class="w-3.5 h-3.5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>Re-enrich`; }
+    }
+  } catch {
+    showToast("Re-enrich request failed.", "error");
+    if (btn) { btn.disabled = false; btn.textContent = "Re-enrich"; }
+  }
+}
+
 /* =====================================================================
-   4. LIGHTBOX
+   4. THUMBNAIL SCROLL + MAP FOCUS HELPERS
+   ===================================================================== */
+function scrollThumb(listingId, dir) {
+  const row = document.getElementById(`thumbrow-${listingId}`);
+  if (!row) return;
+  row.scrollBy({ left: dir * 90, behavior: "smooth" });
+}
+
+function focusMapOnListing(listingId) {
+  const listing = (window._listingById || {})[listingId];
+  if (!listing) return;
+  focusListingOnMap(listing);
+}
+
+/* =====================================================================
+   5. LIGHTBOX
    ===================================================================== */
 window._lbImages = [];
-window._lbIdx    = 0;
+window._lbIdx = 0;
 
 function openLightbox(listingId, startIdx) {
   const listing = (window._listingById || {})[listingId];
   if (!listing || !listing.images || !listing.images.length) return;
   window._lbImages = listing.images;
-  window._lbIdx    = startIdx || 0;
+  window._lbIdx = startIdx || 0;
   _lbRender();
   const lb = document.getElementById("lightbox");
   if (lb) { lb.classList.remove("hidden"); lb.classList.add("flex"); }
@@ -205,17 +268,17 @@ function lightboxPrev() {
 }
 
 function _lbRender() {
-  const img     = document.getElementById("lightbox-img");
+  const img = document.getElementById("lightbox-img");
   const counter = document.getElementById("lightbox-counter");
-  if (img)     img.src         = window._lbImages[window._lbIdx] || "";
+  if (img) img.src = window._lbImages[window._lbIdx] || "";
   if (counter) counter.textContent = `${window._lbIdx + 1} / ${window._lbImages.length}`;
 }
 
 /* =====================================================================
-   5. DESCRIPTION TOGGLE
+   6. DESCRIPTION TOGGLE
    ===================================================================== */
 function toggleDesc(listingId) {
-  const el  = document.getElementById(`desc-${listingId}`);
+  const el = document.getElementById(`desc-${listingId}`);
   const btn = document.getElementById(`desc-btn-${listingId}`);
   if (!el) return;
   const expanded = el.style.webkitLineClamp === "unset" || el.style.overflow === "visible";
@@ -234,7 +297,7 @@ function toggleDesc(listingId) {
 }
 
 /* =====================================================================
-   6. CARD EXPAND / COLLAPSE
+   7. CARD EXPAND / COLLAPSE
    ===================================================================== */
 window._expandedCardId = null;
 
@@ -249,8 +312,8 @@ function toggleCard(listingId) {
   }
 }
 
-function expandCard(listingId) {
-  const detail  = document.getElementById(`detail-${listingId}`);
+function expandCard(listingId, focusMap = false) {
+  const detail = document.getElementById(`detail-${listingId}`);
   const wrapper = document.querySelector(`[data-listing-id="${listingId}"]`);
   if (!detail) return;
 
@@ -266,36 +329,44 @@ function expandCard(listingId) {
   // Scroll card into view
   if (wrapper) wrapper.scrollIntoView({ behavior: "smooth", block: "nearest" });
 
-  // Map: zoom, show overlays
+  // Map: zoom only if triggered from map; otherwise just open popup label
   const listing = (window._listingById || {})[listingId];
   if (listing) {
-    focusListingOnMap(listing);
+    if (focusMap) {
+      focusListingOnMap(listing);
+    } else {
+      const marker = window._markerById[listingId];
+      if (marker) marker.openPopup();
+    }
     showMapOverlays(listing);
   }
 }
 
 function collapseCard(listingId) {
-  const detail  = document.getElementById(`detail-${listingId}`);
+  const detail = document.getElementById(`detail-${listingId}`);
   const wrapper = document.querySelector(`[data-listing-id="${listingId}"]`);
   if (detail) detail.classList.add("hidden");
   if (wrapper) wrapper.classList.remove("card-expanded");
   if (window._expandedCardId === listingId) window._expandedCardId = null;
   clearMapOverlays();
+  // Close the marker popup
+  const marker = window._markerById && window._markerById[listingId];
+  if (marker && window._map) window._map.closePopup();
 }
 
 /* =====================================================================
    7. FILTER STATE + APPLY
    ===================================================================== */
 const _filterState = {
-  sort:       "newest",
-  savedOnly:  false,
+  sort: "newest",
+  savedOnly: false,
   appliedOnly: false,
-  minPrice:   null,
-  maxPrice:   null,
-  rooms:      [],      // array of ints (selected room counts)
+  minPrice: null,
+  maxPrice: null,
+  rooms: [],      // array of ints (selected room counts)
   maxCommute: 0,       // 0 = any
-  districts:  [],      // array of strings
-  amenities:  [],      // array of amenity keys
+  districts: [],      // array of strings
+  amenities: [],      // array of amenity keys
 };
 
 // Room filter toggle
@@ -333,7 +404,7 @@ function updateCommuteLabel(val) {
 
 function toggleFilterPanel() {
   const panel = document.getElementById("filter-panel");
-  const btn   = document.getElementById("filter-toggle-btn");
+  const btn = document.getElementById("filter-toggle-btn");
   if (!panel) return;
   const isOpen = !panel.classList.contains("hidden");
   panel.classList.toggle("hidden", isOpen);
@@ -379,25 +450,25 @@ function applyFilters() {
 
   // --- Filter visibility ---
   wrappers.forEach(wrapper => {
-    const id      = parseInt(wrapper.dataset.listingId, 10);
+    const id = parseInt(wrapper.dataset.listingId, 10);
     const listing = (window._listingById || {})[id];
     if (!listing) return;
 
-    const price    = parseInt(wrapper.dataset.price)   || 0;
-    const rooms    = parseInt(wrapper.dataset.rooms)   || 0;
-    const commute  = parseInt(wrapper.dataset.commute) || 9999;
+    const price = parseInt(wrapper.dataset.price) || 0;
+    const rooms = parseInt(wrapper.dataset.rooms) || 0;
+    const commute = parseInt(wrapper.dataset.commute) || 9999;
     const district = wrapper.dataset.district || "";
-    const saved    = wrapper.dataset.saved   === "true";
-    const status   = wrapper.dataset.status  || "not_applied";
-    const amenStr  = wrapper.dataset.amenities || "";
+    const saved = wrapper.dataset.saved === "true";
+    const status = wrapper.dataset.status || "not_applied";
+    const amenStr = wrapper.dataset.amenities || "";
     const amenList = amenStr ? amenStr.split(",") : [];
 
     let show = true;
 
-    if (_filterState.savedOnly  && !saved)                         show = false;
-    if (_filterState.appliedOnly && status === "not_applied")      show = false;
-    if (_filterState.minPrice  && price < _filterState.minPrice)   show = false;
-    if (_filterState.maxPrice  && price > _filterState.maxPrice)   show = false;
+    if (_filterState.savedOnly && !saved) show = false;
+    if (_filterState.appliedOnly && status === "not_applied") show = false;
+    if (_filterState.minPrice && price < _filterState.minPrice) show = false;
+    if (_filterState.maxPrice && price > _filterState.maxPrice) show = false;
     if (_filterState.maxCommute > 0 && commute > _filterState.maxCommute) show = false;
 
     if (_filterState.rooms.length) {
@@ -412,9 +483,9 @@ function applyFilters() {
     if (_filterState.amenities.length) {
       const hasAll = _filterState.amenities.every(a =>
         amenList.includes(a) ||
-        (a === "washing_machine"  && listing.has_washing_machine) ||
-        (a === "tumble_dryer"     && listing.has_dryer) ||
-        (a === "dishwasher"       && listing.has_dishwasher)
+        (a === "washing_machine" && listing.has_washing_machine) ||
+        (a === "tumble_dryer" && listing.has_dryer) ||
+        (a === "dishwasher" && listing.has_dishwasher)
       );
       if (!hasAll) show = false;
     }
@@ -432,9 +503,9 @@ function applyFilters() {
 
   // Show "no results" empty state
   const noResults = document.getElementById("no-filter-results");
-  const list      = document.getElementById("listings-list");
+  const list = document.getElementById("listings-list");
   if (noResults) noResults.classList.toggle("hidden", visible > 0);
-  if (list)      list.classList.toggle("hidden",      visible === 0);
+  if (list) list.classList.toggle("hidden", visible === 0);
 
   // Update filter badge count
   syncFilterCount();
@@ -450,12 +521,12 @@ function syncFilterCount() {
   const badge = document.getElementById("filter-count-badge");
   if (!badge) return;
   let count = 0;
-  if (_filterState.minPrice)             count++;
-  if (_filterState.maxPrice)             count++;
-  if (_filterState.maxCommute > 0)       count++;
-  if (_filterState.rooms.length)         count += _filterState.rooms.length;
-  if (_filterState.districts.length)     count += _filterState.districts.length;
-  if (_filterState.amenities.length)     count += _filterState.amenities.length;
+  if (_filterState.minPrice) count++;
+  if (_filterState.maxPrice) count++;
+  if (_filterState.maxCommute > 0) count++;
+  if (_filterState.rooms.length) count += _filterState.rooms.length;
+  if (_filterState.districts.length) count += _filterState.districts.length;
+  if (_filterState.amenities.length) count += _filterState.amenities.length;
 
   if (count > 0) {
     badge.textContent = count;
@@ -466,15 +537,15 @@ function syncFilterCount() {
 }
 
 function resetFilters() {
-  _filterState.sort       = "newest";
-  _filterState.savedOnly  = false;
+  _filterState.sort = "newest";
+  _filterState.savedOnly = false;
   _filterState.appliedOnly = false;
-  _filterState.minPrice   = null;
-  _filterState.maxPrice   = null;
-  _filterState.rooms      = [];
+  _filterState.minPrice = null;
+  _filterState.maxPrice = null;
+  _filterState.rooms = [];
   _filterState.maxCommute = 0;
-  _filterState.districts  = [];
-  _filterState.amenities  = [];
+  _filterState.districts = [];
+  _filterState.amenities = [];
 
   // Reset UI inputs
   const sort = document.getElementById("filter-sort");
@@ -527,30 +598,30 @@ function sortCards(by) {
 
 function syncUrlParams() {
   const p = new URLSearchParams();
-  if (_filterState.sort !== "newest")        p.set("sort",       _filterState.sort);
-  if (_filterState.savedOnly)                p.set("saved",      "1");
-  if (_filterState.appliedOnly)              p.set("applied",    "1");
-  if (_filterState.minPrice)                 p.set("min_price",  _filterState.minPrice);
-  if (_filterState.maxPrice)                 p.set("max_price",  _filterState.maxPrice);
-  if (_filterState.maxCommute > 0)           p.set("commute",    _filterState.maxCommute);
-  if (_filterState.rooms.length)             p.set("rooms",      _filterState.rooms.join(","));
-  if (_filterState.districts.length)         p.set("districts",  _filterState.districts.join(","));
-  if (_filterState.amenities.length)         p.set("amenities",  _filterState.amenities.join(","));
+  if (_filterState.sort !== "newest") p.set("sort", _filterState.sort);
+  if (_filterState.savedOnly) p.set("saved", "1");
+  if (_filterState.appliedOnly) p.set("applied", "1");
+  if (_filterState.minPrice) p.set("min_price", _filterState.minPrice);
+  if (_filterState.maxPrice) p.set("max_price", _filterState.maxPrice);
+  if (_filterState.maxCommute > 0) p.set("commute", _filterState.maxCommute);
+  if (_filterState.rooms.length) p.set("rooms", _filterState.rooms.join(","));
+  if (_filterState.districts.length) p.set("districts", _filterState.districts.join(","));
+  if (_filterState.amenities.length) p.set("amenities", _filterState.amenities.join(","));
   const qs = p.toString();
   history.replaceState(null, "", qs ? `?${qs}` : window.location.pathname);
 }
 
 function readUrlParams() {
   const p = new URLSearchParams(window.location.search);
-  if (p.get("sort"))       _filterState.sort        = p.get("sort");
-  if (p.get("saved"))      _filterState.savedOnly   = true;
-  if (p.get("applied"))    _filterState.appliedOnly  = true;
-  if (p.get("min_price"))  _filterState.minPrice    = parseInt(p.get("min_price"));
-  if (p.get("max_price"))  _filterState.maxPrice    = parseInt(p.get("max_price"));
-  if (p.get("commute"))    _filterState.maxCommute  = parseInt(p.get("commute"));
-  if (p.get("rooms"))      _filterState.rooms       = p.get("rooms").split(",").map(Number);
-  if (p.get("districts"))  _filterState.districts   = p.get("districts").split(",");
-  if (p.get("amenities"))  _filterState.amenities   = p.get("amenities").split(",");
+  if (p.get("sort")) _filterState.sort = p.get("sort");
+  if (p.get("saved")) _filterState.savedOnly = true;
+  if (p.get("applied")) _filterState.appliedOnly = true;
+  if (p.get("min_price")) _filterState.minPrice = parseInt(p.get("min_price"));
+  if (p.get("max_price")) _filterState.maxPrice = parseInt(p.get("max_price"));
+  if (p.get("commute")) _filterState.maxCommute = parseInt(p.get("commute"));
+  if (p.get("rooms")) _filterState.rooms = p.get("rooms").split(",").map(Number);
+  if (p.get("districts")) _filterState.districts = p.get("districts").split(",");
+  if (p.get("amenities")) _filterState.amenities = p.get("amenities").split(",");
 }
 
 function restoreFilterUI() {
@@ -602,12 +673,39 @@ function initDistrictFilters() {
 /* =====================================================================
    8. LEAFLET MAP
    ===================================================================== */
-window._map          = null;
-window._markerById   = {};   // listingId → Leaflet marker
+window._map = null;
+window._markerById = {};   // listingId → Leaflet marker
 window._clusterGroup = null;
-window._workMarker   = null;
-window._listingById  = {};   // fast lookup: listingId → listing data
+window._workMarker = null;
+window._listingById = {};   // fast lookup: listingId → listing data
 window._supermarketLayers = []; // supermarket markers shown on card expand
+window._routeLayers = []; // transit route polylines shown on card expand
+
+/* Decode a Google Maps encoded polyline string → [[lat, lng], ...] */
+function decodePolyline(str) {
+  let index = 0, lat = 0, lng = 0, result = [];
+  while (index < str.length) {
+    let b, shift = 0, res = 0;
+    do { b = str.charCodeAt(index++) - 63; res |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+    lat += (res & 1) ? ~(res >> 1) : (res >> 1);
+    shift = 0; res = 0;
+    do { b = str.charCodeAt(index++) - 63; res |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+    lng += (res & 1) ? ~(res >> 1) : (res >> 1);
+    result.push([lat / 1e5, lng / 1e5]);
+  }
+  return result;
+}
+
+/* Return a Leaflet polyline color/dash style for a transit step */
+function _routeStepStyle(step) {
+  if (step.mode === "WALKING") return { color: "#6b7280", weight: 3, dashArray: "5, 7", opacity: 0.85 };
+  const v = (step.vehicle || "").toUpperCase();
+  if (v === "SUBWAY" || v === "METRO_RAIL" || v === "HEAVY_RAIL") return { color: "#2563eb", weight: 5, opacity: 0.9 };
+  if (v === "TRAM" || v === "LIGHT_RAIL") return { color: "#7c3aed", weight: 5, opacity: 0.9 };
+  if (v === "BUS") return { color: "#16a34a", weight: 4, opacity: 0.85 };
+  if (v === "FERRY") return { color: "#0891b2", weight: 4, opacity: 0.85 };
+  return { color: "#f59e0b", weight: 4, opacity: 0.85 };
+}
 
 function initMap() {
   const mapEl = document.getElementById("map");
@@ -671,24 +769,24 @@ function initMap() {
       .bindPopup(`<div style="font-size:13px;font-weight:600;">Work</div><div style="font-size:12px;color:#6b7280;">${s.work_address || ""}</div>`);
   }
 
-  // Clicking a map marker expands that card in the list
+  // Clicking a map marker expands that card + zooms map
   Object.entries(window._markerById).forEach(([id, marker]) => {
     marker.on("click", () => {
       const intId = parseInt(id, 10);
-      if (window._expandedCardId !== intId) {
-        if (window._expandedCardId !== null) collapseCard(window._expandedCardId);
-        expandCard(intId);
+      if (window._expandedCardId !== null && window._expandedCardId !== intId) {
+        collapseCard(window._expandedCardId);
       }
+      expandCard(intId, true);
     });
   });
 }
 
 function createListingMarker(listing) {
   const color = scoreColor(listing.ai_score);
-  const icon  = L.divIcon({
+  const icon = L.divIcon({
     html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>`,
     className: "",
-    iconSize:   [14, 14],
+    iconSize: [14, 14],
     iconAnchor: [7, 7],
   });
   return L.marker([listing.lat, listing.lng], { icon }).bindPopup(buildPopup(listing));
@@ -696,7 +794,7 @@ function createListingMarker(listing) {
 
 function focusListingOnMap(listing) {
   const marker = window._markerById[listing.id];
-  const map    = window._map;
+  const map = window._map;
   if (!marker || !map) return;
 
   // If inside a cluster, spiderfy it first
@@ -711,10 +809,37 @@ function focusListingOnMap(listing) {
   }
 }
 
-function showMapOverlays(listing) {
+async function showMapOverlays(listing) {
   clearMapOverlays();
   const map = window._map;
   if (!map) return;
+
+  // --- Transit route overlay ---
+  if (listing.lat && listing.lng) {
+    try {
+      const resp = await fetch(`/api/transit-route/${listing.id}`);
+      const data = await resp.json();
+      if (data.success && data.steps && data.steps.length) {
+        data.steps.forEach(step => {
+          const latlngs = decodePolyline(step.polyline);
+          if (!latlngs.length) return;
+          const style = _routeStepStyle(step);
+          const line = L.polyline(latlngs, style).addTo(map);
+          const label = step.mode === "TRANSIT"
+            ? `<b>${step.line_name || step.vehicle}</b> ${step.departure_stop} → ${step.arrival_stop} (${step.duration_min} min)`
+            : `Walk ${step.duration_min} min`;
+          line.bindTooltip(label, { sticky: true, className: "route-tooltip" });
+          window._routeLayers.push(line);
+        });
+        // Fit map to show full route
+        const allPoints = window._routeLayers.flatMap(l => l.getLatLngs());
+        if (allPoints.length) map.fitBounds(L.latLngBounds(allPoints), { padding: [40, 40], maxZoom: 15 });
+        // Show route legend
+        const legend = document.getElementById("route-legend");
+        if (legend) legend.classList.remove("hidden");
+      }
+    } catch (_) { /* no route — silently skip */ }
+  }
 
   const supermarkets = (listing.nearby_pois || {}).supermarkets || [];
   supermarkets.forEach(poi => {
@@ -734,7 +859,7 @@ function showMapOverlays(listing) {
         display:flex;align-items:center;justify-content:center;
         font-size:14px;line-height:1;">🛒</div>`,
       className: "",
-      iconSize:   [26, 26],
+      iconSize: [26, 26],
       iconAnchor: [13, 13],
     });
 
@@ -753,6 +878,10 @@ function clearMapOverlays() {
   if (!map) return;
   window._supermarketLayers.forEach(m => map.removeLayer(m));
   window._supermarketLayers = [];
+  window._routeLayers.forEach(l => map.removeLayer(l));
+  window._routeLayers = [];
+  const legend = document.getElementById("route-legend");
+  if (legend) legend.classList.add("hidden");
 }
 
 function updateMarkerVisibility() {
@@ -790,9 +919,9 @@ function scoreColor(score) {
 }
 
 function buildPopup(listing) {
-  const price   = listing.price_sek ? listing.price_sek.toLocaleString("sv-SE") + " kr/mo" : "–";
-  const rooms   = listing.rooms     ? listing.rooms + " rum" : "–";
-  const score   = listing.ai_score != null
+  const price = listing.price_sek ? listing.price_sek.toLocaleString("sv-SE") + " kr/mo" : "–";
+  const rooms = listing.rooms ? listing.rooms + " rum" : "–";
+  const score = listing.ai_score != null
     ? `<span style="color:${scoreColor(listing.ai_score)};font-weight:600;">AI ${listing.ai_score}</span>`
     : `<span style="color:#0ea5e9;">Not scored</span>`;
   return `
@@ -812,8 +941,8 @@ document.addEventListener("keydown", e => {
   const lb = document.getElementById("lightbox");
   if (!lb || lb.classList.contains("hidden")) return;
   if (e.key === "ArrowRight") lightboxNext();
-  if (e.key === "ArrowLeft")  lightboxPrev();
-  if (e.key === "Escape")     closeLightbox();
+  if (e.key === "ArrowLeft") lightboxPrev();
+  if (e.key === "Escape") closeLightbox();
 });
 
 document.addEventListener("DOMContentLoaded", () => {

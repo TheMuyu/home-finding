@@ -119,6 +119,20 @@ html.dark .leaflet-popup-tip {
   transition: background-color 0.15s ease;
 }
 
+/* --- Light mode: nicer listing panel --- */
+html.light #listings-list {
+  background: #f8fafc;
+}
+html.light .listing-card-wrapper {
+  background: #ffffff;
+}
+html.light .listing-card-wrapper + .listing-card-wrapper {
+  border-top: 1px solid #f1f5f9;
+}
+html.light .listing-card-header:hover {
+  background-color: #f8fafc !important;
+}
+
 /* --- Expanded card highlight --- */
 .listing-card-wrapper.card-expanded > .listing-card-header {
   background-color: #eff6ff;
@@ -126,8 +140,11 @@ html.dark .leaflet-popup-tip {
 html.dark .listing-card-wrapper.card-expanded > .listing-card-header {
   background-color: rgba(30, 58, 138, 0.15);
 }
+html.light .listing-card-wrapper.card-expanded {
+  box-shadow: 0 2px 12px rgba(14, 165, 233, 0.08);
+}
 
-/* --- Expandable detail: smooth open --- */
+/* --- Expanded detail: smooth open + light mode tint --- */
 .listing-card-detail {
   animation: slideDown 0.15s ease-out;
 }
@@ -135,6 +152,14 @@ html.dark .listing-card-wrapper.card-expanded > .listing-card-header {
   from { opacity: 0; transform: translateY(-6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+html.light .listing-card-detail {
+  background: #f0f9ff;
+  border-left: 3px solid #bae6fd;
+}
+
+/* --- Scrollbar hide (thumbnail rows) --- */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
 /* --- Active filter button (rooms, districts) --- */
 .active-filter-btn {
@@ -177,3 +202,15 @@ html.dark .active-filter-btn {
 .toast-success { background-color: #16a34a; }
 .toast-error   { background-color: #dc2626; }
 .toast-info    { background-color: #0284c7; }
+
+/* --- Transit route tooltip --- */
+.route-tooltip {
+  background: rgba(15, 23, 42, 0.88);
+  border: none;
+  border-radius: 6px;
+  color: #f1f5f9;
+  font-size: 12px;
+  padding: 4px 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.route-tooltip::before { display: none; }

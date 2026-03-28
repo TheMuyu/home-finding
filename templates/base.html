@@ -138,40 +138,6 @@
     }
   </script>
 
-  <!-- API Key Warning Banner -->
-  {% if missing_keys %}
-  <div id="api-key-banner" class="bg-amber-50 dark:bg-amber-900/30 border-b border-amber-200 dark:border-amber-700">
-    <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-      <div class="flex items-start justify-between gap-4">
-        <div class="flex items-start gap-2">
-          <svg class="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor"
-            viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-          </svg>
-          <div class="text-sm text-amber-800 dark:text-amber-200">
-            <span class="font-semibold">Missing API keys — some features disabled:</span>
-            <ul class="mt-1 list-disc list-inside space-y-0.5">
-              {% for key in missing_keys %}
-              <li><code class="text-xs bg-amber-100 dark:bg-amber-800/50 px-1 rounded">{{ key.key }}</code> — {{
-                key.feature }}</li>
-              {% endfor %}
-            </ul>
-            <p class="mt-1 text-xs text-amber-700 dark:text-amber-300">Add keys to your <code>.env</code> file. See
-              <code>.env.example</code> for setup instructions.</p>
-          </div>
-        </div>
-        <button onclick="document.getElementById('api-key-banner').remove()"
-          class="text-amber-500 hover:text-amber-700 dark:hover:text-amber-300 flex-shrink-0 mt-0.5">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-    </div>
-  </div>
-  {% endif %}
-
   <!-- Flash messages -->
   {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}

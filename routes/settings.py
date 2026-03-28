@@ -20,6 +20,7 @@ def get_or_create_settings():
             must_have_washing_machine=False,
             must_have_dryer=False,
             must_have_dishwasher=False,
+            must_have_amenities=[],
             preferred_districts=[],
             theme="light",
         )
@@ -48,9 +49,12 @@ def save_settings():
     floor_min_raw = request.form.get("floor_min", "").strip()
     settings.floor_min = int(floor_min_raw) if floor_min_raw else None
 
-    settings.must_have_washing_machine = "must_have_washing_machine" in request.form
-    settings.must_have_dryer = "must_have_dryer" in request.form
-    settings.must_have_dishwasher = "must_have_dishwasher" in request.form
+    must_have_amenities = request.form.getlist("must_have_amenities")
+    settings.must_have_amenities = must_have_amenities
+    # Keep legacy boolean columns in sync
+    settings.must_have_washing_machine = "washing_machine" in must_have_amenities
+    settings.must_have_dryer = "tumble_dryer" in must_have_amenities
+    settings.must_have_dishwasher = "dishwasher" in must_have_amenities
 
     preferred_districts = request.form.getlist("preferred_districts")
     settings.preferred_districts = preferred_districts

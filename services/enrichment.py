@@ -72,7 +72,8 @@ def _run_enrich_all(app) -> None:
                 try:
                     _enrich_one(listing_id)
                 except Exception as e:
-                    logger.error(f"Enrichment failed for listing {listing_id}: {e}")
+                    logger.error(
+                        f"Enrichment failed for listing {listing_id}: {e}")
         except Exception as e:
             logger.error(f"Bulk enrichment failed: {e}")
 
@@ -86,7 +87,8 @@ def _enrich_one(listing_id: int) -> dict:
     from services.overpass import get_nearby_pois
     from services.transit import get_commute, get_nearby_stops
 
-    summary = {"geocoded": False, "commute": False, "stops": False, "pois": False}
+    summary = {"geocoded": False, "commute": False,
+               "stops": False, "pois": False}
 
     listing = Listing.query.get(listing_id)
     if not listing:
@@ -106,11 +108,14 @@ def _enrich_one(listing_id: int) -> dict:
                 listing.lng = result["lng"]
                 db.session.commit()
                 summary["geocoded"] = True
-                logger.info(f"Geocoded listing {listing_id}: ({listing.lat}, {listing.lng})")
+                logger.info(
+                    f"Geocoded listing {listing_id}: ({listing.lat}, {listing.lng})")
             else:
-                logger.warning(f"Could not geocode address for listing {listing_id}: '{listing.address}'")
+                logger.warning(
+                    f"Could not geocode address for listing {listing_id}: '{listing.address}'")
         else:
-            logger.info(f"Listing {listing_id} has no address — skipping geocoding")
+            logger.info(
+                f"Listing {listing_id} has no address — skipping geocoding")
 
     # Need lat/lng for transit and POIs
     if listing.lat is None or listing.lng is None:
@@ -135,6 +140,10 @@ def _enrich_one(listing_id: int) -> dict:
     # ── 3. Calculate commute time ───────────────────────────────────────────
     if listing.commute_minutes is None and work_lat and work_lng:
         commute = get_commute(listing.lat, listing.lng, work_lat, work_lng)
+        if commute is None:
+            from services.transit import get_commute_google
+            commute = get_commute_google(
+                listing.lat, listing.lng, work_lat, work_lng)
         if commute:
             listing.commute_minutes = commute["minutes"]
             listing.commute_details = {
@@ -144,7 +153,8 @@ def _enrich_one(listing_id: int) -> dict:
             }
             db.session.commit()
             summary["commute"] = True
-            logger.info(f"Commute for listing {listing_id}: {commute['minutes']} min")
+            logger.info(
+                f"Commute for listing {listing_id}: {commute['minutes']} min")
 
     # ── 4. Nearby transit stops ─────────────────────────────────────────────
     if not listing.nearby_stops:
@@ -153,7 +163,8 @@ def _enrich_one(listing_id: int) -> dict:
             listing.nearby_stops = stops
             db.session.commit()
             summary["stops"] = True
-            logger.info(f"Found {len(stops)} nearby stops for listing {listing_id}")
+            logger.info(
+                f"Found {len(stops)} nearby stops for listing {listing_id}")
 
     # ── 5. Nearby POIs ──────────────────────────────────────────────────────
     existing_pois = listing.nearby_pois or {}

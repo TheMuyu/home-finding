@@ -44,19 +44,6 @@
           </svg>
           <span id="map-toggle-label">Map</span>
         </button>
-        {% if listings %}
-        <button onclick="clearSeedData()"
-          class="text-xs px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-          Clear Seed
-        </button>
-        {% endif %}
-        <button id="seed-btn" onclick="seedData()"
-          class="text-xs px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1">
-          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
-          Seed
-        </button>
         <button id="score-all-btn" onclick="scoreAll()"
           class="text-xs px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1"
           title="Score all unscored listings with Claude AI">
@@ -232,19 +219,30 @@
             class="listing-card-header p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
             onclick="toggleCard({{ listing.id }})">
             <div class="flex gap-3">
-              <!-- Thumbnail -->
-              <div
-                class="w-20 h-16 rounded-lg bg-gray-200 dark:bg-gray-700 flex-shrink-0 overflow-hidden flex items-center justify-center">
-                {% if listing.images %}
-                <img src="{{ listing.images[0] }}" alt="{{ listing.title }}" class="w-full h-full object-cover"
-                  onerror="this.parentElement.innerHTML='<svg class=\'w-8 h-8 text-gray-400\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z\'/></svg>'">
-                {% else %}
-                <svg class="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor"
-                  viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                    d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" />
-                </svg>
-                {% endif %}
+              <!-- Thumbnail + status badge below -->
+              <div class="flex flex-col items-center gap-1 flex-shrink-0">
+                <div
+                  class="w-20 h-16 rounded-lg bg-gray-200 dark:bg-gray-700 overflow-hidden flex items-center justify-center">
+                  {% if listing.images %}
+                  <img src="{{ listing.images[0] }}" alt="{{ listing.title }}" class="w-full h-full object-cover"
+                    onerror="this.parentElement.innerHTML='<svg class=\'w-8 h-8 text-gray-400\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z\'/></svg>'">
+                  {% else %}
+                  <svg class="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                      d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" />
+                  </svg>
+                  {% endif %}
+                </div>
+                <span class="status-thumb-badge text-[10px] px-1.5 py-0.5 rounded-full font-medium capitalize w-20 text-center truncate
+                  {% if listing.application_status and listing.application_status != 'not_applied' %}
+                  {% if listing.application_status == 'accepted' %}bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300
+                  {% elif listing.application_status == 'rejected' %}bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400
+                  {% elif listing.application_status == 'waiting' %}bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300
+                  {% else %}bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300{% endif %}
+                  {% else %}hidden{% endif %}">
+                  {{ listing.application_status.replace('_', ' ') if listing.application_status else '' }}
+                </span>
               </div>
 
               <!-- Info -->
@@ -253,16 +251,29 @@
                   <h3 class="text-sm font-semibold text-gray-900 dark:text-white truncate leading-tight">
                     {{ listing.title }}
                   </h3>
-                  <!-- Save toggle -->
-                  <button onclick="event.stopPropagation(); toggleSave({{ listing.id }}, this)"
-                    data-saved="{{ listing.is_saved|lower }}"
-                    class="flex-shrink-0 transition-colors {% if listing.is_saved %}text-yellow-400{% else %}text-gray-300 dark:text-gray-600 hover:text-yellow-400{% endif %}">
-                    <svg class="w-4 h-4" fill="{{ 'currentColor' if listing.is_saved else 'none' }}"
-                      stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                    </svg>
-                  </button>
+                  <!-- Action buttons + Save toggle -->
+                  <div class="flex items-center gap-1 flex-shrink-0">
+                    {% if listing.url %}
+                    <a href="{{ listing.url }}" target="_blank" rel="noopener" onclick="event.stopPropagation()"
+                      class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-600 hover:text-brand-600 dark:hover:text-brand-400 transition-colors font-medium leading-tight">
+                      Qasa ↗
+                    </a>
+                    {% endif %}
+                    <button onclick="event.stopPropagation(); focusMapOnListing({{ listing.id }})"
+                      title="Zoom map to this listing"
+                      class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-600 hover:text-brand-600 dark:hover:text-brand-400 transition-colors font-medium leading-tight">
+                      Map
+                    </button>
+                    <button onclick="event.stopPropagation(); toggleSave({{ listing.id }}, this)"
+                      data-saved="{{ listing.is_saved|lower }}"
+                      class="flex-shrink-0 transition-colors {% if listing.is_saved %}text-yellow-400{% else %}text-gray-300 dark:text-gray-600 hover:text-yellow-400{% endif %}">
+                      <svg class="w-4 h-4" fill="{{ 'currentColor' if listing.is_saved else 'none' }}"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
 
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
@@ -301,10 +312,9 @@
                     {% if listing.service_fee_sek %}
                     {{ "{:,}".format(listing.price_sek + listing.service_fee_sek) }} kr/mo
                     <span class="text-xs font-normal text-gray-400"
-                      title="Rent {{ '{:,}'.format(listing.price_sek) }} + fee {{ '{:,}'.format(listing.service_fee_sek) }} kr">(incl.
-                      fee)</span>
+                      title="Rent {{ '{:,}'.format(listing.price_sek) }} + fee {{ '{:,}'.format(listing.service_fee_sek) }} kr">(incl. fee{% if listing.deposit_months %} · {{ listing.deposit_months }}mo deposit{% endif %})</span>
                     {% else %}
-                    {{ "{:,}".format(listing.price_sek) }} kr/mo
+                    {{ "{:,}".format(listing.price_sek) }} kr/mo{% if listing.deposit_months %}<span class="text-xs font-normal text-gray-400 ml-1">({{ listing.deposit_months }}mo deposit)</span>{% endif %}
                     {% endif %}
                   </span>
                   <span class="text-xs text-gray-500 dark:text-gray-400">
@@ -339,17 +349,6 @@
                   <span
                     class="text-xs px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
                     {{ listing.commute_minutes }} min
-                  </span>
-                  {% endif %}
-
-                  <!-- Application status badge (if applied) -->
-                  {% if listing.application_status and listing.application_status != 'not_applied' %}
-                  <span class="text-xs px-1.5 py-0.5 rounded capitalize
-                    {% if listing.application_status == 'accepted' %}bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300
-                    {% elif listing.application_status == 'rejected' %}bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400
-                    {% elif listing.application_status == 'waiting' %}bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300
-                    {% else %}bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300{% endif %}">
-                    {{ listing.application_status.replace('_', ' ') }}
                   </span>
                   {% endif %}
 
@@ -390,15 +389,29 @@
           <div id="detail-{{ listing.id }}"
             class="listing-card-detail hidden border-t border-gray-100 dark:border-gray-700/50 bg-gray-50 dark:bg-gray-800/30 p-4">
 
-            <!-- Image thumbnails — click to open lightbox -->
+            <!-- Image thumbnails — scrollable single row with nav -->
             {% if listing.images %}
-            <div class="mb-4 flex gap-2 flex-wrap">
-              {% for img in listing.images %}
-              <img src="{{ img }}" alt="{{ listing.title }}"
-                class="w-16 h-16 object-cover rounded-lg cursor-pointer flex-shrink-0 hover:opacity-80 hover:ring-2 hover:ring-brand-500 transition-all"
-                onclick="event.stopPropagation(); openLightbox({{ listing.id }}, {{ loop.index0 }})"
-                onerror="this.style.display='none'" />
-              {% endfor %}
+            <div class="mb-4 relative group">
+              {% if listing.images|length > 4 %}
+              <button onclick="event.stopPropagation(); scrollThumb({{ listing.id }}, -1)"
+                class="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-6 h-6 rounded-full bg-white dark:bg-gray-700 shadow border border-gray-200 dark:border-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors opacity-0 group-hover:opacity-100">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+              </button>
+              {% endif %}
+              <div id="thumbrow-{{ listing.id }}" class="flex gap-2 overflow-x-auto scrollbar-hide {% if listing.images|length > 4 %}px-7{% endif %}">
+                {% for img in listing.images %}
+                <img src="{{ img }}" alt="{{ listing.title }}"
+                  class="w-20 h-16 object-cover rounded-lg cursor-pointer flex-shrink-0 hover:opacity-80 hover:ring-2 hover:ring-brand-500 transition-all"
+                  onclick="event.stopPropagation(); openLightbox({{ listing.id }}, {{ loop.index0 }})"
+                  onerror="this.style.display='none'" />
+                {% endfor %}
+              </div>
+              {% if listing.images|length > 4 %}
+              <button onclick="event.stopPropagation(); scrollThumb({{ listing.id }}, 1)"
+                class="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-6 h-6 rounded-full bg-white dark:bg-gray-700 shadow border border-gray-200 dark:border-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors opacity-0 group-hover:opacity-100">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+              </button>
+              {% endif %}
             </div>
             {% endif %}
 
@@ -450,19 +463,11 @@
               </div>
               {% endif %}
             </div>
-            {% else %}
-            <div class="mb-4">
-              <button
-                onclick="event.stopPropagation(); scoreListing({{ listing.id }}, document.getElementById('score-btn-{{ listing.id }}'))"
-                class="text-xs px-3 py-1.5 rounded border border-purple-200 dark:border-purple-700 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors">
-                Score this listing with AI
-              </button>
-            </div>
             {% endif %}
 
             <!-- Commute + Stops -->
-            {% if listing.commute_minutes or listing.nearby_stops %}
             <div class="mb-4 bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-100 dark:border-gray-700">
+              {% if listing.commute_minutes or listing.nearby_stops %}
               {% if listing.commute_minutes %}
               <div class="flex items-center gap-3 mb-2">
                 <span class="text-2xl font-bold text-brand-600 dark:text-brand-400">{{ listing.commute_minutes }}<span
@@ -531,8 +536,22 @@
                 </div>
               </div>
               {% endif %}
+              {% else %}
+              <!-- No transit data yet -->
+              <div class="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                </svg>
+                <span>No transit data yet —
+                  {% if not settings_json.get('work_address') %}
+                    set a work address in Settings first, then
+                  {% endif %}
+                  use Re-enrich below to fetch commute &amp; nearby stops.
+                </span>
+              </div>
+              {% endif %}
             </div>
-            {% endif %}
 
             <!-- Nearby POIs -->
             {% if listing.nearby_pois %}
@@ -580,33 +599,30 @@
             </div>
             {% endif %}
 
-            <!-- House rules + deposit -->
+            <!-- House rules -->
             {% set rules = listing.house_rules or {} %}
-            {% if rules or listing.deposit_months or listing.electricity_included is not none %}
-            <div class="mb-4 text-xs space-y-0.5 text-gray-600 dark:text-gray-400">
+            {% if rules or listing.electricity_included is not none %}
+            <div class="mb-4 text-xs text-gray-500 dark:text-gray-400 flex flex-wrap gap-x-3 gap-y-0.5">
               {% if rules.get('pets_allowed') is not none %}
-              <div>{{ '✓ Pets allowed' if rules.pets_allowed else '✗ No pets' }}</div>
+              <span>{{ '✓ Pets' if rules.pets_allowed else '✗ No pets' }}</span>
               {% endif %}
               {% if rules.get('smoking_allowed') is not none %}
-              <div>{{ '✓ Smoking allowed' if rules.smoking_allowed else '✗ No smoking' }}</div>
+              <span>{{ '✓ Smoking' if rules.smoking_allowed else '✗ No smoking' }}</span>
               {% endif %}
               {% if rules.get('wheelchair_accessible') %}
-              <div>♿ Wheelchair accessible</div>
+              <span>♿ Accessible</span>
               {% endif %}
               {% if rules.get('max_tenants') %}
-              <div>👥 Max {{ rules.max_tenants }} tenants</div>
-              {% endif %}
-              {% if listing.deposit_months %}
-              <div>Deposit: {{ listing.deposit_months }} month{{ 's' if listing.deposit_months != 1 else '' }}</div>
+              <span>👥 Max {{ rules.max_tenants }} tenants</span>
               {% endif %}
               {% if listing.electricity_included is not none %}
-              <div>Electricity: {{ 'included' if listing.electricity_included else 'not included' }}</div>
+              <span>⚡ Electricity {{ 'included' if listing.electricity_included else 'not included' }}</span>
               {% endif %}
             </div>
             {% endif %}
 
             <!-- Application status + Notes -->
-            <div class="mb-4 grid grid-cols-2 gap-3" onclick="event.stopPropagation()">
+            <div class="mb-3 grid grid-cols-2 gap-3" onclick="event.stopPropagation()">
               <div>
                 <label class="text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1">Application
                   status</label>
@@ -630,20 +646,20 @@
               </div>
             </div>
 
-            <!-- Footer: external link + collapse -->
-            <div class="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700/50">
-              {% if listing.url %}
-              <a href="{{ listing.url }}" target="_blank" rel="noopener" onclick="event.stopPropagation()"
-                class="text-xs text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1">
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <!-- Re-enrich button -->
+            <div class="mb-4" onclick="event.stopPropagation()">
+              <button id="reenrich-btn-{{ listing.id }}" onclick="reEnrich({{ listing.id }})"
+                class="text-xs px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200 transition-colors flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                View original listing
-              </a>
-              {% else %}
-              <span></span>
-              {% endif %}
+                Re-enrich (geocode, commute, stops, POIs)
+              </button>
+            </div>
+
+            <!-- Footer: collapse -->
+            <div class="flex items-center justify-end pt-3 border-t border-gray-100 dark:border-gray-700/50">
               <button onclick="event.stopPropagation(); collapseCard({{ listing.id }})"
                 class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-1 transition-colors">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -676,15 +692,11 @@
           </svg>
         </div>
         <h2 class="text-base font-semibold text-gray-700 dark:text-gray-300 mb-1">No listings yet</h2>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Seed sample data to explore the app, or add a listing
-          manually.</p>
-        <button onclick="seedData()"
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Scrape Qasa listings or add one manually to get started.</p>
+        <a href="{{ url_for('listings.add_listing_page') }}"
           class="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium transition-colors flex items-center gap-2">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
-          Seed Sample Data
-        </button>
+          + Add Listing
+        </a>
       </div>
       {% endif %}
 
@@ -699,6 +711,7 @@
     <!-- Map legend -->
     <div
       class="absolute bottom-4 left-4 z-[400] bg-white dark:bg-gray-800 rounded-xl shadow-lg px-3 py-2 text-xs space-y-1 border border-gray-200 dark:border-gray-700">
+      <div class="text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wide text-[10px] pb-0.5">Listings</div>
       <div class="flex items-center gap-1.5"><span
           class="w-3 h-3 rounded-full bg-green-600 border-2 border-white shadow-sm inline-block"></span> Score ≥70</div>
       <div class="flex items-center gap-1.5"><span
@@ -709,6 +722,13 @@
       </div>
       <div class="flex items-center gap-1.5"><span
           class="w-3 h-3 rounded-full bg-sky-500 border-2 border-white shadow-sm inline-block"></span> Not scored</div>
+      <div id="route-legend" class="hidden pt-1 border-t border-gray-100 dark:border-gray-700 space-y-1">
+        <div class="text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wide text-[10px] pb-0.5">Route</div>
+        <div class="flex items-center gap-1.5"><span class="inline-block w-5 h-0.5 bg-blue-600 rounded"></span> Subway / Rail</div>
+        <div class="flex items-center gap-1.5"><span class="inline-block w-5 h-0.5 bg-purple-600 rounded"></span> Tram</div>
+        <div class="flex items-center gap-1.5"><span class="inline-block w-5 h-0.5 bg-green-600 rounded"></span> Bus</div>
+        <div class="flex items-center gap-1.5"><span class="inline-block w-5 h-0.5 border-t-2 border-dashed border-gray-400 w-5"></span> Walk</div>
+      </div>
     </div>
   </div>
 

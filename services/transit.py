@@ -35,7 +35,8 @@ def get_commute(from_lat: float, from_lng: float, to_lat: float, to_lng: float) 
         or None if unavailable.
     """
     if not TRAFIKLAB_RESROBOT_KEY:
-        logger.warning("TRAFIKLAB_RESROBOT_KEY not set — skipping commute calculation")
+        logger.warning(
+            "TRAFIKLAB_RESROBOT_KEY not set — skipping commute calculation")
         return None
 
     try:
@@ -117,7 +118,8 @@ def get_nearby_stops(lat: float, lng: float, max_results: int = 5) -> list[dict]
     (25k req/30d) which is much more usable.
     """
     if not TRAFIKLAB_RESROBOT_KEY:
-        logger.warning("TRAFIKLAB_RESROBOT_KEY not set — skipping nearby stops lookup")
+        logger.warning(
+            "TRAFIKLAB_RESROBOT_KEY not set — skipping nearby stops lookup")
         return []
 
     try:
@@ -147,9 +149,93 @@ def get_nearby_stops(lat: float, lng: float, max_results: int = 5) -> list[dict]
             "name": stop.get("name", ""),
             "distance_m": dist_m,
             "walk_min": walk_min,
-            "products": stop.get("products", 0),  # bitmask: metro/bus/commuter rail
+            # bitmask: metro/bus/commuter rail
+            "products": stop.get("products", 0),
         })
     return stops
+
+
+def get_commute_google(from_lat: float, from_lng: float, to_lat: float, to_lng: float) -> dict | None:
+    """
+    Calculate commute using Google Maps Directions API (transit mode).
+    Used as fallback when TRAFIKLAB_RESROBOT_KEY is not set.
+
+    Returns same shape as get_commute():
+        {"minutes": int, "changes": int, "lines": [...], "legs": [...]}
+        or None on failure.
+    """
+    from config import GOOGLE_MAPS_API_KEY
+    if not GOOGLE_MAPS_API_KEY:
+        return None
+
+    try:
+        resp = requests.get(
+            "https://maps.googleapis.com/maps/api/directions/json",
+            params={
+                "origin": f"{from_lat},{from_lng}",
+                "destination": f"{to_lat},{to_lng}",
+                "mode": "transit",
+                "key": GOOGLE_MAPS_API_KEY,
+            },
+            timeout=15,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    except Exception as e:
+        logger.warning(f"Google Directions commute request failed: {e}")
+        return None
+
+    if data.get("status") != "OK" or not data.get("routes"):
+        logger.info(
+            f"Google Directions returned status '{data.get('status')}' — no commute")
+        return None
+
+    leg = data["routes"][0]["legs"][0]
+    minutes = round(leg["duration"]["value"] / 60)
+
+    lines = []
+    legs = []
+    changes = -1  # count transit segments minus 1
+    for step in leg.get("steps", []):
+        mode = step.get("travel_mode", "WALKING")
+        if mode == "TRANSIT":
+            changes += 1
+            td = step.get("transit_details", {})
+            line_info = td.get("line", {})
+            line_name = line_info.get(
+                "short_name") or line_info.get("name", "")
+            vehicle = line_info.get("vehicle", {}).get("type", "BUS")
+            dep = td.get("departure_stop", {}).get("name", "")
+            arr = td.get("arrival_stop", {}).get("name", "")
+            display = line_name or vehicle
+            if display and display not in lines:
+                lines.append(display)
+            legs.append({
+                "mode": vehicle,
+                "line": display,
+                "from": dep,
+                "to": arr,
+                "dep": "",
+                "arr": "",
+            })
+        elif mode == "WALKING" and legs:
+            dur_min = round(step["duration"]["value"] / 60)
+            if dur_min >= 2:
+                legs.append({
+                    "mode": "WALK",
+                    "line": "",
+                    "from": "",
+                    "to": f"Walk {dur_min} min",
+                    "dep": "",
+                    "arr": "",
+                })
+
+    return {
+        "minutes": minutes,
+        "changes": max(0, changes),
+        "lines": lines,
+        "legs": legs,
+    }
 
 
 def _haversine_m(lat1: float, lng1: float, lat2: float, lng2: float) -> int:
@@ -158,5 +244,6 @@ def _haversine_m(lat1: float, lng1: float, lat2: float, lng2: float) -> int:
     phi1, phi2 = math.radians(lat1), math.radians(lat2)
     dphi = math.radians(lat2 - lat1)
     dlam = math.radians(lng2 - lng1)
-    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlam / 2) ** 2
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * \
+        math.cos(phi2) * math.sin(dlam / 2) ** 2
     return round(2 * R * math.asin(math.sqrt(a)))

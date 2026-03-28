@@ -152,10 +152,15 @@ def save_listing():
     available_from = None
     available_from_str = request.form.get("available_from", "").strip()
     if available_from_str:
-        try:
-            available_from = datetime.strptime(available_from_str, "%Y-%m-%d").date()
-        except ValueError:
-            pass
+        if available_from_str == "now":
+            available_from = date.today()
+        else:
+            for fmt in ("%Y-%m-%d", "%d %b %Y", "%b %d, %Y", "%B %d, %Y", "%d %B %Y"):
+                try:
+                    available_from = datetime.strptime(available_from_str, fmt).date()
+                    break
+                except ValueError:
+                    continue
 
     available_until = request.form.get("available_until", "").strip() or None
 
@@ -303,6 +308,129 @@ def extract_url():
         return jsonify({"error": "Could not extract listing data from this URL. Try entering manually."}), 422
 
     return jsonify(result)
+
+
+# ── Bulk URL import (extract + auto-save multiple URLs) ───────────────────────
+
+@listings_bp.route("/listings/bulk-import", methods=["POST"])
+def bulk_import():
+    """
+    Accept a list of Qasa URLs, extract + auto-save each one.
+    Returns per-URL results: {url, status: "saved"|"duplicate"|"error", title?, error?}
+    """
+    import json as _json
+
+    data = request.get_json(silent=True) or {}
+    urls = data.get("urls", [])
+    if not urls or not isinstance(urls, list):
+        return jsonify({"error": "urls list is required"}), 400
+
+    try:
+        from scrapers.qasa import extract_from_url
+    except ImportError as e:
+        return jsonify({"error": f"Scraper not available: {e}"}), 503
+
+    results = []
+    for url in urls:
+        url = url.strip()
+        if not url:
+            continue
+        if "qasa.se" not in url and "qasa.com" not in url:
+            results.append({"url": url, "status": "error", "error": "Not a Qasa URL"})
+            continue
+
+        try:
+            item = extract_from_url(url)
+        except Exception as e:
+            results.append({"url": url, "status": "error", "error": str(e)})
+            continue
+
+        if item is None:
+            results.append({"url": url, "status": "error", "error": "Could not extract listing data"})
+            continue
+
+        amenities = item.get("amenities") or []
+        listing = Listing(
+            source="qasa",
+            url=item.get("url") or url,
+            title=item.get("title", ""),
+            description=item.get("description", ""),
+            address=item.get("address", ""),
+            district=item.get("district", ""),
+            price_sek=item.get("price_sek") or 0,
+            rooms=item.get("rooms") or 1,
+            floor=item.get("floor"),
+            size_sqm=item.get("size_sqm"),
+            available_from=None,
+            available_until=item.get("available_until"),
+            amenities=amenities,
+            has_washing_machine="washing_machine" in amenities,
+            has_dryer="tumble_dryer" in amenities,
+            has_dishwasher="dishwasher" in amenities,
+            home_type=item.get("home_type"),
+            furnishing=item.get("furnishing"),
+            is_shared=item.get("is_shared"),
+            service_fee_sek=item.get("service_fee_sek"),
+            electricity_included=item.get("electricity_included"),
+            deposit_months=item.get("deposit_months"),
+            house_rules=item.get("house_rules") or {},
+            images=item.get("images") or [],
+        )
+        # Upsert: update existing listing if URL already exists, otherwise insert
+        existing = Listing.query.filter_by(url=item.get("url") or url).first()
+        if existing:
+            existing.title = item.get("title", existing.title)
+            existing.description = item.get("description", existing.description)
+            existing.address = item.get("address", existing.address)
+            existing.district = item.get("district", existing.district)
+            existing.price_sek = item.get("price_sek") or existing.price_sek
+            existing.rooms = item.get("rooms") or existing.rooms
+            existing.floor = item.get("floor") if item.get("floor") is not None else existing.floor
+            existing.size_sqm = item.get("size_sqm") or existing.size_sqm
+            existing.available_until = item.get("available_until") or existing.available_until
+            existing.amenities = amenities or existing.amenities
+            existing.has_washing_machine = "washing_machine" in amenities
+            existing.has_dryer = "tumble_dryer" in amenities
+            existing.has_dishwasher = "dishwasher" in amenities
+            existing.home_type = item.get("home_type") or existing.home_type
+            existing.furnishing = item.get("furnishing") or existing.furnishing
+            existing.is_shared = item.get("is_shared") if item.get("is_shared") is not None else existing.is_shared
+            existing.service_fee_sek = item.get("service_fee_sek") or existing.service_fee_sek
+            existing.electricity_included = item.get("electricity_included") if item.get("electricity_included") is not None else existing.electricity_included
+            existing.deposit_months = item.get("deposit_months") or existing.deposit_months
+            existing.house_rules = item.get("house_rules") or existing.house_rules
+            existing.images = item.get("images") or existing.images
+            # Preserve: is_saved, application_status, application_date, notes, ai_score, ai_comment, ai_pros, ai_cons
+            try:
+                db.session.commit()
+                results.append({"url": url, "status": "updated", "title": item.get("title", url)})
+            except Exception as e:
+                db.session.rollback()
+                logger.error(f"Failed to update listing {url}: {e}")
+                results.append({"url": url, "status": "error", "error": str(e)})
+        else:
+            db.session.add(listing)
+            try:
+                db.session.commit()
+                try:
+                    from flask import current_app
+                    from services.enrichment import enrich_listing_async
+                    enrich_listing_async(current_app._get_current_object(), listing.id)
+                except Exception:
+                    pass
+                results.append({"url": url, "status": "saved", "title": item.get("title", url)})
+            except IntegrityError:
+                db.session.rollback()
+                results.append({"url": url, "status": "error", "error": "Unexpected duplicate conflict"})
+            except Exception as e:
+                db.session.rollback()
+                logger.error(f"Failed to save bulk listing {url}: {e}")
+                results.append({"url": url, "status": "error", "error": str(e)})
+
+    saved = sum(1 for r in results if r["status"] == "saved")
+    updated = sum(1 for r in results if r["status"] == "updated")
+    errors = sum(1 for r in results if r["status"] == "error")
+    return jsonify({"results": results, "saved": saved, "updated": updated, "errors": errors})
 
 
 # ── URL extraction debug ──────────────────────────────────────────────────────

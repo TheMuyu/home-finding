@@ -290,6 +290,82 @@ def export_csv():
     )
 
 
+@api_bp.route("/transit-route/<int:listing_id>", methods=["GET"])
+def transit_route(listing_id):
+    """
+    Fetch transit route from listing to work address using Google Maps Directions API.
+    Returns per-step encoded polylines, modes, and line info for map rendering.
+    """
+    from config import GOOGLE_MAPS_API_KEY
+    if not GOOGLE_MAPS_API_KEY:
+        return jsonify({"success": False, "error": "GOOGLE_MAPS_API_KEY not configured"}), 400
+
+    listing = Listing.query.get_or_404(listing_id)
+    if not listing.lat or not listing.lng:
+        return jsonify({"success": False, "error": "Listing has no coordinates"}), 400
+
+    from database.models import UserSettings
+    settings = UserSettings.query.first()
+    if not settings or not settings.work_lat or not settings.work_lng:
+        return jsonify({"success": False, "error": "Work address not set in Settings"}), 400
+
+    import requests as _requests
+    try:
+        resp = _requests.get(
+            "https://maps.googleapis.com/maps/api/directions/json",
+            params={
+                "origin": f"{listing.lat},{listing.lng}",
+                "destination": f"{settings.work_lat},{settings.work_lng}",
+                "mode": "transit",
+                "key": GOOGLE_MAPS_API_KEY,
+            },
+            timeout=10,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+        if data.get("status") != "OK" or not data.get("routes"):
+            return jsonify({
+                "success": False,
+                "error": f"Directions API: {data.get('status', 'no routes')}",
+            }), 400
+
+        route = data["routes"][0]
+        leg = route["legs"][0]
+
+        steps = []
+        for step in leg.get("steps", []):
+            mode = step.get("travel_mode", "WALKING")
+            entry = {
+                "mode": mode,
+                "polyline": step["polyline"]["points"],
+                "duration_min": round(step["duration"]["value"] / 60),
+                "distance_m": step["distance"]["value"],
+            }
+            if mode == "TRANSIT":
+                td = step.get("transit_details", {})
+                line = td.get("line", {})
+                entry["line_name"] = line.get("short_name") or line.get("name", "")
+                entry["vehicle"] = line.get("vehicle", {}).get("type", "BUS")
+                entry["departure_stop"] = td.get("departure_stop", {}).get("name", "")
+                entry["arrival_stop"] = td.get("arrival_stop", {}).get("name", "")
+            steps.append(entry)
+
+        total_min = round(leg["duration"]["value"] / 60)
+        return jsonify({
+            "success": True,
+            "steps": steps,
+            "total_minutes": total_min,
+            "summary": route.get("summary", ""),
+            "work_lat": settings.work_lat,
+            "work_lng": settings.work_lng,
+        })
+
+    except Exception as e:
+        logger.error(f"Transit route failed for listing {listing_id}: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @api_bp.route("/seed", methods=["POST"])
 def run_seed():
     try:

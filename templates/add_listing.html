@@ -16,15 +16,19 @@
   <!-- ═══ Mode A: URL paste ══════════════════════════════════════════════════ -->
   <div id="url-section" class="mb-6">
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
-      <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-        Paste a Qasa listing URL
+      <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+        Paste Qasa listing URL(s)
       </label>
-      <div class="flex gap-2">
-        <input id="qasa-url-input" type="url" placeholder="https://qasa.com/se/en/home/..." value="{{ prefill_url }}"
-          class="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
-                 text-gray-900 dark:text-gray-100 text-sm px-3 py-2 focus:outline-none
-                 focus:ring-2 focus:ring-brand-500 placeholder-gray-400 dark:placeholder-gray-500" />
-        <button id="extract-btn" onclick="extractUrl()" class="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
+        One URL = review before saving. Multiple URLs (one per line) = auto-save all.
+      </p>
+      <textarea id="qasa-url-input" rows="4"
+        placeholder="https://qasa.com/se/en/home/...&#10;https://qasa.com/se/en/home/...&#10;Paste one or more URLs, one per line"
+        class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
+               text-gray-900 dark:text-gray-100 text-sm px-3 py-2 focus:outline-none
+               focus:ring-2 focus:ring-brand-500 placeholder-gray-400 dark:placeholder-gray-500 resize-y font-mono">{{ prefill_url }}</textarea>
+      <div class="mt-2 flex items-center gap-3">
+        <button id="extract-btn" onclick="handleUrlSubmit()" class="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium
                  transition-colors flex items-center gap-2 whitespace-nowrap">
           <span id="extract-btn-text">Extract</span>
           <svg id="extract-spinner" class="hidden animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24">
@@ -32,14 +36,47 @@
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
           </svg>
         </button>
+        <span class="text-xs text-gray-500 dark:text-gray-400">Each URL takes ~20–30s to scrape.</span>
+        <button type="button" onclick="showManualMode()" class="ml-auto text-xs text-gray-500 dark:text-gray-400 underline hover:text-gray-700 dark:hover:text-gray-300">
+          Enter manually
+        </button>
       </div>
       <p id="extract-error" class="hidden mt-2 text-xs text-red-600 dark:text-red-400"></p>
-      <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-        Extraction may take 20–30 seconds while the page loads.
-        <button type="button" onclick="showManualMode()" class="underline hover:text-gray-700 dark:hover:text-gray-300">
-          Enter manually instead
+    </div>
+
+    <!-- Bulk import progress panel (hidden until bulk mode starts) -->
+    <div id="bulk-panel" class="hidden mt-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">Importing listings…</p>
+        <span id="bulk-counter" class="text-xs text-gray-500 dark:text-gray-400">0 / 0</span>
+      </div>
+      <!-- Progress bar -->
+      <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-4">
+        <div id="bulk-progress-bar" class="bg-brand-600 h-2 rounded-full transition-all duration-300" style="width:0%"></div>
+      </div>
+      <!-- Summary badges -->
+      <div class="flex gap-3 mb-4 text-xs font-medium">
+        <span class="flex items-center gap-1 text-green-700 dark:text-green-400">
+          <span id="bulk-saved-count">0</span> saved
+        </span>
+        <span class="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+          <span id="bulk-updated-count">0</span> updated
+        </span>
+        <span class="flex items-center gap-1 text-red-700 dark:text-red-400">
+          <span id="bulk-err-count">0</span> error
+        </span>
+      </div>
+      <!-- Per-URL status list -->
+      <ul id="bulk-status-list" class="space-y-1.5 max-h-72 overflow-y-auto text-xs"></ul>
+      <!-- Done actions -->
+      <div id="bulk-done-actions" class="hidden mt-4 flex gap-3">
+        <a href="/listings" class="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium transition-colors">
+          View Listings
+        </a>
+        <button onclick="resetBulkPanel()" class="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          Import More
         </button>
-      </p>
+      </div>
     </div>
   </div>
 
@@ -181,8 +218,15 @@
     <div class="p-5 grid grid-cols-2 gap-4">
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Available from</label>
-        <input type="date" name="available_from" id="field-available-from"
+        <select name="available_from" id="field-available-from"
           class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
+                 text-gray-900 dark:text-gray-100 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500">
+          <option value="">Unknown</option>
+          <option value="now">Now / Immediately</option>
+        </select>
+        <!-- Date input shown if a specific start date is found -->
+        <input type="date" id="field-available-from-date" name="available_from" placeholder="yyyy-mm-dd"
+          class="hidden mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
                  text-gray-900 dark:text-gray-100 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500" />
       </div>
       <div>
@@ -322,13 +366,24 @@
 
   // ── URL extraction ──────────────────────────────────────────────────────────
 
-  async function extractUrl() {
-    const url = document.getElementById("qasa-url-input").value.trim();
-    if (!url) { showExtractError("Please paste a Qasa listing URL first."); return; }
+  function parseUrls() {
+    const raw = document.getElementById("qasa-url-input").value;
+    return raw.split(/[\n\r,]+/).map(u => u.trim()).filter(u => u.length > 0);
+  }
 
-    setExtracting(true);
+  function handleUrlSubmit() {
+    const urls = parseUrls();
+    if (!urls.length) { showExtractError("Please paste at least one Qasa URL."); return; }
     clearExtractError();
+    if (urls.length === 1) {
+      extractSingleUrl(urls[0]);
+    } else {
+      startBulkImport(urls);
+    }
+  }
 
+  async function extractSingleUrl(url) {
+    setExtracting(true, "Extracting…");
     try {
       const res = await fetch("/listings/extract-url", {
         method: "POST",
@@ -336,28 +391,136 @@
         body: JSON.stringify({ url }),
       });
       const data = await res.json();
-
       if (!res.ok) {
         showExtractError(data.error || "Extraction failed.");
         document.getElementById("field-url").value = url;
         return;
       }
-
       fillForm(data);
       document.getElementById("url-section").classList.add("hidden");
       document.getElementById("listing-form").classList.remove("hidden");
       showToast("Details extracted — please review before saving.", "success", 4000);
-
     } catch (err) {
       showExtractError("Request failed. Is the server running?");
     } finally {
-      setExtracting(false);
+      setExtracting(false, "Extract");
     }
   }
 
-  function setExtracting(active) {
+  // ── Bulk import ─────────────────────────────────────────────────────────────
+
+  async function startBulkImport(urls) {
+    setExtracting(true, `Importing 0 / ${urls.length}…`);
+    document.getElementById("bulk-panel").classList.remove("hidden");
+    document.getElementById("bulk-done-actions").classList.add("hidden");
+
+    const list = document.getElementById("bulk-status-list");
+    list.innerHTML = "";
+
+    // Pre-populate rows as "pending"
+    const rows = {};
+    urls.forEach((url, i) => {
+      const li = document.createElement("li");
+      li.className = "flex items-start gap-2 py-1 border-b border-gray-100 dark:border-gray-700 last:border-0";
+      li.innerHTML = `
+        <span id="bulk-icon-${i}" class="mt-0.5 flex-shrink-0">
+          <svg class="w-3.5 h-3.5 text-gray-400 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+          </svg>
+        </span>
+        <span class="truncate text-gray-500 dark:text-gray-400 flex-1" title="${url}">${url}</span>
+        <span id="bulk-label-${i}" class="flex-shrink-0 text-gray-400">pending</span>`;
+      list.appendChild(li);
+      rows[i] = li;
+    });
+
+    updateBulkProgress(0, urls.length, 0, 0, 0);
+
+    // Process one at a time so each URL gets scraped sequentially
+    let saved = 0, updated = 0, errors = 0;
+    for (let i = 0; i < urls.length; i++) {
+      updateExtractBtnText(`Importing ${i + 1} / ${urls.length}…`);
+      setRowProcessing(i);
+      try {
+        const res = await fetch("/listings/bulk-import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ urls: [urls[i]] }),
+        });
+        const data = await res.json();
+        const r = data.results && data.results[0];
+        if (!r) throw new Error("No result");
+        if (r.status === "saved")   { saved++;   setRowDone(i, "saved",   r.title || urls[i]); }
+        else if (r.status === "updated") { updated++; setRowDone(i, "updated", r.title || urls[i]); }
+        else                            { errors++;   setRowDone(i, "error",   r.error || "failed"); }
+      } catch (e) {
+        errors++;
+        setRowDone(i, "error", String(e));
+      }
+      updateBulkProgress(i + 1, urls.length, saved, updated, errors);
+    }
+
+    setExtracting(false, "Extract");
+    document.getElementById("bulk-done-actions").classList.remove("hidden");
+    showToast(`Done — ${saved} saved, ${updated} updated, ${errors} error`, (saved + updated) > 0 ? "success" : "error", 5000);
+  }
+
+  function setRowProcessing(i) {
+    document.getElementById(`bulk-icon-${i}`).innerHTML =
+      `<svg class="w-3.5 h-3.5 text-brand-500 animate-spin" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+      </svg>`;
+    document.getElementById(`bulk-label-${i}`).textContent = "extracting…";
+    document.getElementById(`bulk-label-${i}`).className = "flex-shrink-0 text-brand-500";
+  }
+
+  const BULK_ICON = {
+    saved:   `<svg class="w-3.5 h-3.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`,
+    updated: `<svg class="w-3.5 h-3.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582M20 20v-5h-.581M5.635 19A9 9 0 104.582 9"/></svg>`,
+    error:   `<svg class="w-3.5 h-3.5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>`,
+  };
+  const BULK_LABEL_CLASS = {
+    saved:   "flex-shrink-0 text-green-600 dark:text-green-400 font-medium",
+    updated: "flex-shrink-0 text-blue-600 dark:text-blue-400 font-medium",
+    error:   "flex-shrink-0 text-red-600 dark:text-red-400 font-medium",
+  };
+
+  function setRowDone(i, status, labelText) {
+    document.getElementById(`bulk-icon-${i}`).innerHTML = BULK_ICON[status] || "";
+    const lbl = document.getElementById(`bulk-label-${i}`);
+    lbl.textContent = status === "saved" ? "saved" : status === "duplicate" ? "duplicate" : labelText;
+    lbl.title = labelText;
+    lbl.className = BULK_LABEL_CLASS[status] || "";
+    // Update the URL text to show title if available and different
+    if ((status === "saved" || status === "updated") && labelText) {
+      const textSpan = lbl.previousElementSibling;
+      if (textSpan) textSpan.textContent = labelText;
+    }
+  }
+
+  function updateBulkProgress(done, total, saved, updated, errors) {
+    document.getElementById("bulk-counter").textContent = `${done} / ${total}`;
+    document.getElementById("bulk-progress-bar").style.width = total ? `${(done / total) * 100}%` : "0%";
+    document.getElementById("bulk-saved-count").textContent = saved;
+    document.getElementById("bulk-updated-count").textContent = updated;
+    document.getElementById("bulk-err-count").textContent = errors;
+  }
+
+  function updateExtractBtnText(text) {
+    document.getElementById("extract-btn-text").textContent = text;
+  }
+
+  function resetBulkPanel() {
+    document.getElementById("bulk-panel").classList.add("hidden");
+    document.getElementById("qasa-url-input").value = "";
+    setExtracting(false, "Extract");
+  }
+
+  function setExtracting(active, label) {
     const btn = document.getElementById("extract-btn");
-    document.getElementById("extract-btn-text").textContent = active ? "Extracting…" : "Extract";
+    document.getElementById("extract-btn-text").textContent = label || (active ? "Extracting…" : "Extract");
     document.getElementById("extract-spinner").classList.toggle("hidden", !active);
     btn.disabled = active;
   }
@@ -384,7 +547,15 @@
     setField("field-rooms", data.rooms || "");
     setField("field-floor", data.floor != null ? data.floor : "");
     setField("field-size", data.size_sqm || "");
-    setField("field-available-from", data.available_from || "");
+    // Available from
+    if (data.available_from === "now") {
+      setSelect("field-available-from", "now");
+    } else if (data.available_from) {
+      document.getElementById("field-available-from").disabled = true;
+      const dif = document.getElementById("field-available-from-date");
+      dif.classList.remove("hidden");
+      dif.value = data.available_from;
+    }
     setTextarea("field-description", data.description || "");
 
     // Home type, furnishing, rental type

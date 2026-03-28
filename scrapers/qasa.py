@@ -238,6 +238,18 @@ def _extract_from_next_data(next_data: dict, data: dict):
                 data["floor"] = int(val)
                 break
 
+        # Available from (moveIn field may be "now" string or ISO date)
+        if not data.get("available_from"):
+            for key in ("moveIn", "availableFrom", "startDate", "moveInDate"):
+                val = listing.get(key)
+                if isinstance(val, str) and val:
+                    val_lower = val.lower().strip()
+                    if val_lower in ("now", "immediately", "asap"):
+                        data["available_from"] = "now"
+                    else:
+                        data["available_from"] = val_lower[:10]  # keep YYYY-MM-DD part
+                    break
+
         # Description
         data["description"] = (
             listing.get("description")
@@ -570,6 +582,29 @@ def _parse_qasa_page_text(text: str, data: dict):
                 val = int(m.group(1))
                 if 0 <= val <= 50:
                     data["floor"] = val
+                    break
+
+    # Available from
+    if not data.get("available_from"):
+        # "Move in\n\nNow" or "Available from\n\nNow"
+        if re.search(r"(?:move.?in|available\s+from)[\s\S]{0,20}\bnow\b", text, re.IGNORECASE):
+            data["available_from"] = "now"
+        else:
+            # Specific date patterns: "2025-04-01", "Apr 1, 2025", "1 Apr 2025"
+            for pat in (
+                r"(?:move.?in|available\s+from)[\s\S]{0,30}(\d{4}-\d{2}-\d{2})",
+                r"(?:move.?in|available\s+from)[\s\S]{0,30}(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4})",
+                r"(?:move.?in|available\s+from)[\s\S]{0,30}((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},?\s+\d{4})",
+            ):
+                m = re.search(pat, text, re.IGNORECASE)
+                if m:
+                    raw = m.group(1).strip()
+                    # Normalise to YYYY-MM-DD if it's already in that format
+                    if re.match(r"\d{4}-\d{2}-\d{2}", raw):
+                        data["available_from"] = raw
+                    else:
+                        # Store the human-readable string; the route will parse it
+                        data["available_from"] = raw
                     break
 
     # Available until

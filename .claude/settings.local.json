@@ -15,7 +15,11 @@
       "Bash(python -c \"from scrapers.qasa import extract_from_url, _find_coords_in_tree; print\\(''OK''\\); print\\(_find_coords_in_tree\\({''location'': {''latitude'': 59.33, ''longitude'': 18.07}}\\)\\)\")",
       "Bash(wc -l static/js/app.js templates/*.html routes/*.py services/*.py)",
       "Bash(python -c \"from app import create_app; app = create_app\\(\\); print\\(''App created OK''\\)\")",
-      "Bash(wc -l /c/Projects/Personal/home-finding/routes/*.py /c/Projects/Personal/home-finding/services/*.py)"
+      "Bash(wc -l /c/Projects/Personal/home-finding/routes/*.py /c/Projects/Personal/home-finding/services/*.py)",
+      "Bash(curl -s http://127.0.0.1:5000/districts)",
+      "WebSearch",
+      "Bash(curl -s http://127.0.0.1:5000/api/districts)",
+      "Bash(sqlite3 \"c:/Projects/Personal/home-finding/database/apartment_finder.db\" \".schema user_settings\")"
     ]
   }
 }
