@@ -244,6 +244,52 @@ Return only valid JSON in this exact format:
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@api_bp.route("/export/csv", methods=["GET"])
+def export_csv():
+    """Download listings as a CSV file. Pass ?saved_only=1 to export saved listings only."""
+    import csv
+    import io
+    from flask import Response
+
+    saved_only = request.args.get("saved_only", "").lower() in ("1", "true", "yes")
+    query = Listing.query
+    if saved_only:
+        query = query.filter(Listing.is_saved == True)  # noqa: E712
+    listings = query.order_by(Listing.created_at.desc()).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "Title", "Address", "District", "Price (SEK/mo)", "Rooms", "Size (m²)",
+        "AI Score", "Commute (min)", "Application Status", "Application Date",
+        "Available From", "Saved", "Notes", "URL",
+    ])
+    for lst in listings:
+        writer.writerow([
+            lst.title,
+            lst.address or "",
+            lst.district or "",
+            lst.price_sek,
+            lst.rooms,
+            lst.size_sqm if lst.size_sqm is not None else "",
+            lst.ai_score if lst.ai_score is not None else "",
+            lst.commute_minutes if lst.commute_minutes is not None else "",
+            lst.application_status or "",
+            lst.application_date.isoformat() if lst.application_date else "",
+            lst.available_from.isoformat() if lst.available_from else "",
+            "Yes" if lst.is_saved else "No",
+            lst.notes or "",
+            lst.url or "",
+        ])
+
+    output.seek(0)
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=listings.csv"},
+    )
+
+
 @api_bp.route("/seed", methods=["POST"])
 def run_seed():
     try:

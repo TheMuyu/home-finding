@@ -35,6 +35,15 @@
         {% endif %}
       </div>
       <div class="flex items-center gap-1.5">
+        <!-- Mobile map toggle (hidden on lg+) -->
+        <button onclick="toggleMobileMap()" id="map-toggle-btn"
+          class="lg:hidden text-xs px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+          </svg>
+          <span id="map-toggle-label">Map</span>
+        </button>
         {% if listings %}
         <button onclick="clearSeedData()"
           class="text-xs px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
@@ -68,6 +77,15 @@
           </svg>
           <span id="enrich-btn-text">Enrich</span>
         </button>
+        <a href="/api/export/csv" download="listings.csv"
+          class="text-xs px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1"
+          title="Download all listings as CSV">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          CSV
+        </a>
         <button id="scrape-btn" onclick="scrapeQasa()"
           class="text-xs px-2.5 py-1.5 rounded bg-brand-600 hover:bg-brand-700 text-white font-medium transition-colors flex items-center gap-1">
           <svg id="scrape-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -676,7 +694,7 @@
   <!-- ═══════════════════════════════════════════════════════════════════
        RIGHT PANEL: Map
        ═══════════════════════════════════════════════════════════════════ -->
-  <div class="hidden lg:flex flex-col flex-1 relative">
+  <div id="map-panel" class="hidden lg:flex flex-col flex-1 relative">
     <div id="map" class="flex-1 w-full"></div>
     <!-- Map legend -->
     <div
@@ -723,6 +741,27 @@
 <script>
   var LISTINGS_DATA = {{ listings_json | tojson }};
   var SETTINGS_DATA = {{ settings_json | tojson }};
+
+  /* ── Mobile map toggle ──────────────────────────────────────────── */
+  function toggleMobileMap() {
+    const panel = document.getElementById("map-panel");
+    const leftPanel = panel.previousElementSibling;
+    const label = document.getElementById("map-toggle-label");
+    const mapVisible = !panel.classList.contains("hidden");
+    if (mapVisible) {
+      panel.classList.add("hidden");
+      leftPanel.style.display = "";
+      if (label) label.textContent = "Map";
+    } else {
+      panel.classList.remove("hidden");
+      panel.style.display = "flex";
+      panel.style.height = "50vh";
+      leftPanel.style.display = "none";
+      if (label) label.textContent = "List";
+      // Invalidate map size after becoming visible
+      setTimeout(() => { if (window._map) window._map.invalidateSize(); }, 100);
+    }
+  }
 
   /* ── Per-listing inline score/enrich ─────────────────────────────── */
   async function scoreListing(id, btn) {

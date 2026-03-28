@@ -81,3 +81,16 @@ def save_settings():
 def api_current_settings():
     settings = get_or_create_settings()
     return jsonify(settings.to_dict())
+
+
+@settings_bp.route("/api/theme", methods=["POST"])
+def update_theme():
+    """Persist theme toggle to DB (called by the navbar toggle button)."""
+    data = request.get_json(silent=True) or {}
+    theme = data.get("theme", "light")
+    if theme not in ("light", "dark"):
+        return jsonify({"error": "Invalid theme"}), 400
+    settings = get_or_create_settings()
+    settings.theme = theme
+    db.session.commit()
+    return jsonify({"theme": theme})

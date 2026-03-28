@@ -42,7 +42,14 @@
 
   function toggleTheme() {
     const current = htmlEl.classList.contains("dark") ? "dark" : "light";
-    applyTheme(current === "dark" ? "light" : "dark");
+    const next = current === "dark" ? "light" : "dark";
+    applyTheme(next);
+    // Persist to DB (fire-and-forget)
+    fetch("/settings/api/theme", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ theme: next }),
+    }).catch(() => {});
   }
 
   // Expose globals

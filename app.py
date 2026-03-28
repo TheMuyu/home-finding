@@ -19,10 +19,24 @@ def create_app():
     app.register_blueprint(api_bp)
     app.register_blueprint(settings_bp)
 
-    # Inject missing API keys into all templates
+    # Inject globals into all templates
     @app.context_processor
-    def inject_missing_keys():
-        return {"missing_keys": get_missing_api_keys()}
+    def inject_globals():
+        unscored_count = 0
+        db_theme = "light"
+        try:
+            from database.models import Listing, UserSettings
+            unscored_count = Listing.query.filter(Listing.ai_score.is_(None)).count()
+            settings = UserSettings.query.first()
+            if settings:
+                db_theme = settings.theme or "light"
+        except Exception:
+            pass
+        return {
+            "missing_keys": get_missing_api_keys(),
+            "unscored_count": unscored_count,
+            "db_theme": db_theme,
+        }
 
     return app
 

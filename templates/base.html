@@ -6,6 +6,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{% block title %}Stockholm Apartment Finder{% endblock %}</title>
 
+  <!-- Anti-FOUC: apply theme before paint -->
+  <script>
+    (function () {
+      var stored = localStorage.getItem("theme");
+      var dbTheme = "{{ db_theme }}";
+      var theme = stored || dbTheme || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      if (!stored && dbTheme) localStorage.setItem("theme", dbTheme);
+      document.documentElement.classList.toggle("dark", theme === "dark");
+      document.documentElement.classList.toggle("light", theme !== "dark");
+    })();
+  </script>
+
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -61,9 +73,12 @@
         <!-- Nav links -->
         <div class="hidden sm:flex items-center gap-1">
           <a href="{{ url_for('listings.index') }}"
-            class="px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors
+            class="px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-1.5
                    {% if request.endpoint == 'listings.index' %}bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white{% endif %}">
             Listings
+            {% if unscored_count %}
+            <span class="text-[10px] bg-amber-500 text-white rounded-full px-1.5 py-0.5 font-semibold leading-none" title="{{ unscored_count }} unscored listing{{ 's' if unscored_count != 1 else '' }}">{{ unscored_count }}</span>
+            {% endif %}
           </a>
           <a href="{{ url_for('listings.districts_page') }}"
             class="px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors
@@ -80,6 +95,13 @@
             + Add Listing
           </a>
         </div>
+
+        <!-- Mobile hamburger -->
+        <button id="mobile-menu-btn" onclick="toggleMobileMenu()" class="sm:hidden p-2 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" aria-label="Open menu">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
 
         <!-- Theme toggle -->
         <button id="theme-toggle" onclick="toggleTheme()"
@@ -98,6 +120,23 @@
       </div>
     </div>
   </nav>
+
+  <!-- Mobile nav menu (hidden by default) -->
+  <div id="mobile-menu" class="hidden sm:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-2 space-y-1">
+    <a href="{{ url_for('listings.index') }}" class="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+      Listings
+      {% if unscored_count %}<span class="text-[10px] bg-amber-500 text-white rounded-full px-1.5 py-0.5 font-semibold">{{ unscored_count }}</span>{% endif %}
+    </a>
+    <a href="{{ url_for('listings.districts_page') }}" class="block px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Districts</a>
+    <a href="{{ url_for('settings.settings_page') }}" class="block px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Settings</a>
+    <a href="{{ url_for('listings.add_listing_page') }}" class="block px-3 py-2 rounded-md text-sm font-semibold text-brand-600 dark:text-brand-400 hover:bg-gray-100 dark:hover:bg-gray-700">+ Add Listing</a>
+  </div>
+  <script>
+    function toggleMobileMenu() {
+      const menu = document.getElementById("mobile-menu");
+      menu.classList.toggle("hidden");
+    }
+  </script>
 
   <!-- API Key Warning Banner -->
   {% if missing_keys %}
