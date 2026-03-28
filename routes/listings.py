@@ -6,6 +6,7 @@ from sqlalchemy.exc import IntegrityError
 
 from database.db import db
 from database.models import Listing, UserSettings
+from services.district_advisor import get_all_districts
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +80,33 @@ def update_notes(listing_id):
     listing.notes = data.get("notes", "")
     db.session.commit()
     return jsonify({"id": listing.id, "notes": listing.notes})
+
+
+# ── Districts page ────────────────────────────────────────────────────────────
+
+@listings_bp.route("/districts")
+def districts_page():
+    districts = get_all_districts()
+    settings = UserSettings.query.first()
+    settings_dict = settings.to_dict() if settings else {}
+
+    # Count listings per district
+    from sqlalchemy import func
+    counts_raw = (
+        db.session.query(Listing.district, func.count(Listing.id))
+        .filter(Listing.district.isnot(None), Listing.district != "")
+        .group_by(Listing.district)
+        .all()
+    )
+    district_counts = {d.lower(): c for d, c in counts_raw}
+
+    # Annotate each district with listing count + preferred flag
+    preferred = [p.lower() for p in (settings_dict.get("preferred_districts") or [])]
+    for d in districts:
+        d["listing_count"] = district_counts.get(d["name"].lower(), 0)
+        d["is_preferred"] = d["name"].lower() in preferred
+
+    return render_template("districts.html", districts=districts, settings=settings_dict)
 
 
 # ── Add listing page (GET) ────────────────────────────────────────────────────

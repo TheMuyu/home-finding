@@ -1,18 +1,234 @@
 {% extends "base.html" %}
 
-{% block title %}Districts — Stockholm Finder{% endblock %}
+{% block title %}District Guide — Home Finder{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-  <div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-4">
-    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-        d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
-    </svg>
+<div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+  <!-- Page header -->
+  <div class="flex items-start justify-between gap-4 mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Stockholm District Guide</h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        {{ districts|length }} districts &middot; compare rents, transport, and lifestyle
+      </p>
+    </div>
+    <button id="ai-recommend-btn" onclick="requestAiRecommendation()"
+      class="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+      </svg>
+      <span id="ai-btn-text">Ask AI for recommendations</span>
+    </button>
   </div>
-  <h1 class="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">District Guide</h1>
-  <p class="text-gray-500 dark:text-gray-400 text-sm">
-    Coming in Session 6 — Stockholm district profiles, safety info, and AI recommendations.
-  </p>
+
+  <!-- AI Recommendation Panel (hidden until requested) -->
+  <div id="ai-panel" class="hidden mb-8 bg-gradient-to-br from-brand-50 to-purple-50 dark:from-brand-900/20 dark:to-purple-900/20 rounded-2xl border border-brand-200 dark:border-brand-700/50 p-5">
+    <div id="ai-loading" class="flex items-center gap-3 text-brand-700 dark:text-brand-300">
+      <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+      </svg>
+      <span class="text-sm font-medium">Analysing your preferences&hellip;</span>
+    </div>
+    <div id="ai-result" class="hidden">
+      <div class="flex items-center gap-2 mb-3">
+        <svg class="w-5 h-5 text-brand-600 dark:text-brand-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+        </svg>
+        <h2 class="text-sm font-semibold text-gray-900 dark:text-white">AI Recommendation</h2>
+      </div>
+      <p id="ai-summary" class="text-sm text-gray-700 dark:text-gray-300 mb-4 italic"></p>
+      <div id="ai-cards" class="grid grid-cols-1 sm:grid-cols-3 gap-3"></div>
+    </div>
+    <div id="ai-error" class="hidden text-sm text-red-600 dark:text-red-400"></div>
+  </div>
+
+  <!-- District grid -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+    {% for d in districts %}
+    <div class="district-card bg-white dark:bg-gray-800 rounded-2xl border flex flex-col gap-3 p-5 hover:shadow-md transition-shadow
+                {% if d.is_preferred %}border-brand-300 dark:border-brand-600 ring-1 ring-brand-200 dark:ring-brand-700/50{% else %}border-gray-200 dark:border-gray-700{% endif %}"
+         data-name="{{ d.name }}">
+
+      <!-- Card header -->
+      <div class="flex items-start justify-between gap-2">
+        <div>
+          <h2 class="text-base font-bold text-gray-900 dark:text-white leading-tight">{{ d.name }}</h2>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ d.avg_price_range }} SEK/mo avg</p>
+        </div>
+        <div class="flex flex-col items-end gap-1 flex-shrink-0">
+          {% if d.is_preferred %}
+          <span class="text-xs px-2 py-0.5 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 font-medium">Preferred</span>
+          {% endif %}
+          <span class="text-xs px-2 py-0.5 rounded-full font-medium
+            {% if d.green_score >= 8 %}bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300
+            {% elif d.green_score >= 5 %}bg-lime-100 dark:bg-lime-900/40 text-lime-700 dark:text-lime-300
+            {% else %}bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400{% endif %}">
+            &#127807; {{ d.green_score }}/10
+          </span>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{{ d.description }}</p>
+
+      <!-- Pros -->
+      {% if d.pros %}
+      <ul class="space-y-1">
+        {% for pro in d.pros %}
+        <li class="flex items-start gap-1.5 text-xs text-green-700 dark:text-green-400">
+          <svg class="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          {{ pro }}
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+
+      <!-- Cons -->
+      {% if d.cons %}
+      <ul class="space-y-1">
+        {% for con in d.cons %}
+        <li class="flex items-start gap-1.5 text-xs text-red-600 dark:text-red-400">
+          <svg class="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+          {{ con }}
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+
+      <!-- Footer -->
+      <div class="mt-auto pt-3 border-t border-gray-100 dark:border-gray-700/50 space-y-2">
+        <div class="flex flex-wrap gap-1">
+          {% for line in d.sl_lines %}
+          <span class="text-xs px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">{{ line }}</span>
+          {% endfor %}
+        </div>
+        <p class="text-xs text-gray-400 dark:text-gray-500">{{ d.safety_note }}</p>
+        <a href="{{ url_for('listings.index') }}?districts={{ d.name | urlencode }}"
+          class="inline-flex items-center gap-1.5 text-xs text-brand-600 dark:text-brand-400 hover:underline font-medium">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+          </svg>
+          {% if d.listing_count > 0 %}
+            Show {{ d.listing_count }} listing{{ 's' if d.listing_count != 1 else '' }}
+          {% else %}
+            Browse listings in {{ d.name }}
+          {% endif %}
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
 </div>
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-4 right-4 z-[1000] hidden">
+  <div id="toast-inner" class="px-4 py-3 rounded-lg shadow-lg text-sm font-medium text-white max-w-sm"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function showToast(msg, type, duration) {
+    type = type || 'info';
+    duration = duration || 4000;
+    var toast = document.getElementById('toast');
+    var inner = document.getElementById('toast-inner');
+    var colors = { success: 'bg-green-600', error: 'bg-red-600', info: 'bg-gray-700', warning: 'bg-amber-600' };
+    inner.className = 'px-4 py-3 rounded-lg shadow-lg text-sm font-medium text-white max-w-sm ' + (colors[type] || colors.info);
+    inner.textContent = msg;
+    toast.classList.remove('hidden');
+    toast.classList.add('flex');
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(function() { toast.classList.add('hidden'); toast.classList.remove('flex'); }, duration);
+  }
+
+  async function requestAiRecommendation() {
+    var btn = document.getElementById('ai-recommend-btn');
+    var btnText = document.getElementById('ai-btn-text');
+    var panel = document.getElementById('ai-panel');
+    var loading = document.getElementById('ai-loading');
+    var resultEl = document.getElementById('ai-result');
+    var errorEl = document.getElementById('ai-error');
+
+    btn.disabled = true;
+    btnText.textContent = 'Analysing\u2026';
+    panel.classList.remove('hidden');
+    loading.classList.remove('hidden');
+    resultEl.classList.add('hidden');
+    errorEl.classList.add('hidden');
+
+    try {
+      var resp = await fetch('/api/districts/recommend', { method: 'POST' });
+      var data = await resp.json();
+
+      loading.classList.add('hidden');
+
+      if (!data.success) {
+        var msg = data.error || 'Unknown error';
+        errorEl.textContent = msg.includes('API_KEY')
+          ? 'Add ANTHROPIC_API_KEY to your .env file to enable AI recommendations.'
+          : 'AI recommendation failed: ' + msg;
+        errorEl.classList.remove('hidden');
+        btn.disabled = false;
+        btnText.textContent = 'Retry AI recommendation';
+        return;
+      }
+
+      document.getElementById('ai-summary').textContent = data.summary || '';
+      var cardsEl = document.getElementById('ai-cards');
+      cardsEl.innerHTML = '';
+
+      var rankColors = ['text-yellow-500', 'text-gray-400', 'text-amber-700'];
+      var rankLabels = ['1st pick', '2nd pick', '3rd pick'];
+
+      (data.recommendations || []).forEach(function(rec, i) {
+        var bars = '';
+        for (var j = 0; j < 10; j++) {
+          bars += '<div class="h-1.5 flex-1 rounded-full ' + (j < rec.fit_score ? 'bg-brand-500' : 'bg-gray-200 dark:bg-gray-600') + '"></div>';
+        }
+        var card = document.createElement('div');
+        card.className = 'bg-white dark:bg-gray-800/60 rounded-xl border border-brand-100 dark:border-brand-700/30 p-4';
+        card.innerHTML =
+          '<div class="flex items-center justify-between mb-2">' +
+            '<span class="text-sm font-bold text-gray-900 dark:text-white">' + rec.district + '</span>' +
+            '<span class="text-xs font-semibold ' + (rankColors[i] || 'text-gray-400') + '">' + (rankLabels[i] || '') + '</span>' +
+          '</div>' +
+          '<div class="flex items-center gap-1 mb-2">' + bars +
+            '<span class="ml-1 text-xs text-gray-500 dark:text-gray-400">' + rec.fit_score + '/10</span>' +
+          '</div>' +
+          '<p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">' + rec.reason + '</p>' +
+          '<a href="/?districts=' + encodeURIComponent(rec.district) + '" class="inline-flex items-center gap-1 mt-3 text-xs text-brand-600 dark:text-brand-400 hover:underline font-medium">View listings \u2192</a>';
+        cardsEl.appendChild(card);
+
+        // Highlight matching district card
+        var districtCard = document.querySelector('.district-card[data-name="' + rec.district + '"]');
+        if (districtCard) {
+          districtCard.classList.add('ring-2', 'ring-brand-400', 'dark:ring-brand-500');
+        }
+      });
+
+      resultEl.classList.remove('hidden');
+      btn.disabled = false;
+      btnText.textContent = 'Refresh recommendation';
+      panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    } catch (e) {
+      loading.classList.add('hidden');
+      errorEl.textContent = 'Request failed. Check your connection.';
+      errorEl.classList.remove('hidden');
+      btn.disabled = false;
+      btnText.textContent = 'Retry AI recommendation';
+    }
+  }
+</script>
 {% endblock %}

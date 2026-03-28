@@ -161,6 +161,89 @@ def score_all_listings():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@api_bp.route("/districts/recommend", methods=["POST"])
+def recommend_districts():
+    """Ask Claude AI for the top 3 Stockholm districts based on user preferences."""
+    from config import ANTHROPIC_API_KEY
+    if not ANTHROPIC_API_KEY:
+        return jsonify({"success": False, "error": "ANTHROPIC_API_KEY not configured"}), 400
+
+    try:
+        import json as _json
+        import re
+
+        import anthropic
+
+        from database.models import UserSettings
+        from services.district_advisor import get_all_districts
+
+        settings = UserSettings.query.first()
+        districts = get_all_districts()
+
+        settings_lines = []
+        if settings:
+            settings_lines = [
+                f"- Budget: {settings.budget_min}–{settings.budget_max} SEK/month",
+                f"- Rooms: {settings.min_rooms}–{settings.max_rooms}",
+                f"- Max commute: {settings.max_commute_minutes} minutes",
+                f"- Must have washing machine: {settings.must_have_washing_machine}",
+                f"- Must have dryer: {settings.must_have_dryer}",
+                f"- Must have dishwasher: {settings.must_have_dishwasher}",
+                f"- Already preferred: {', '.join(settings.preferred_districts or []) or 'None specified'}",
+            ]
+        settings_text = "\n".join(settings_lines) if settings_lines else "No preferences set."
+
+        districts_text = "\n".join([
+            f"- {d['name']}: {d['description']} "
+            f"Avg rent: {d['avg_price_range']} SEK/mo. "
+            f"Green score: {d['green_score']}/10. "
+            f"Safety: {d['safety_note']} "
+            f"Transit: {', '.join(d['sl_lines'])}."
+            for d in districts
+        ])
+
+        prompt = f"""Based on these user preferences, recommend the top 3 Stockholm districts for apartment hunting.
+
+User preferences:
+{settings_text}
+
+Available districts:
+{districts_text}
+
+Return only valid JSON in this exact format:
+{{
+  "recommendations": [
+    {{"district": "Name", "reason": "Why this suits the user in 1-2 sentences", "fit_score": 9}},
+    {{"district": "Name", "reason": "Why this suits the user in 1-2 sentences", "fit_score": 7}},
+    {{"district": "Name", "reason": "Why this suits the user in 1-2 sentences", "fit_score": 6}}
+  ],
+  "summary": "One sentence overall recommendation"
+}}"""
+
+        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=800,
+            messages=[{"role": "user", "content": prompt}],
+        )
+
+        text = response.content[0].text.strip()
+        try:
+            result = _json.loads(text)
+        except Exception:
+            match = re.search(r"\{.*\}", text, re.DOTALL)
+            if match:
+                result = _json.loads(match.group())
+            else:
+                return jsonify({"success": False, "error": "Could not parse AI response"}), 500
+
+        return jsonify({"success": True, **result})
+
+    except Exception as e:
+        logger.error(f"District recommendation failed: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @api_bp.route("/seed", methods=["POST"])
 def run_seed():
     try:

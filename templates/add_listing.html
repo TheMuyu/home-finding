@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Add Listing — Stockholm Finder{% endblock %}
+{% block title %}Add Listing — Home Finder{% endblock %}
 
 {% block content %}
 <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -20,24 +20,16 @@
         Paste a Qasa listing URL
       </label>
       <div class="flex gap-2">
-        <input
-          id="qasa-url-input"
-          type="url"
-          placeholder="https://qasa.com/se/en/home/..."
-          value="{{ prefill_url }}"
+        <input id="qasa-url-input" type="url" placeholder="https://qasa.com/se/en/home/..." value="{{ prefill_url }}"
           class="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
                  text-gray-900 dark:text-gray-100 text-sm px-3 py-2 focus:outline-none
-                 focus:ring-2 focus:ring-brand-500 placeholder-gray-400 dark:placeholder-gray-500"
-        />
-        <button
-          id="extract-btn"
-          onclick="extractUrl()"
-          class="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium
+                 focus:ring-2 focus:ring-brand-500 placeholder-gray-400 dark:placeholder-gray-500" />
+        <button id="extract-btn" onclick="extractUrl()" class="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium
                  transition-colors flex items-center gap-2 whitespace-nowrap">
           <span id="extract-btn-text">Extract</span>
           <svg id="extract-spinner" class="hidden animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
           </svg>
         </button>
       </div>
@@ -52,12 +44,11 @@
   </div>
 
   <!-- ═══ Listing form ═══════════════════════════════════════════════════════ -->
-  <form id="listing-form" method="POST" action="{{ url_for('listings.save_listing') }}"
-        class="hidden bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700
+  <form id="listing-form" method="POST" action="{{ url_for('listings.save_listing') }}" class="hidden bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700
                shadow-sm divide-y divide-gray-100 dark:divide-gray-700">
 
-    <input type="hidden" name="source"          id="field-source"          value="manual" />
-    <input type="hidden" name="images_json"      id="field-images-json"     value="[]" />
+    <input type="hidden" name="source" id="field-source" value="manual" />
+    <input type="hidden" name="images_json" id="field-images-json" value="[]" />
     <input type="hidden" name="house_rules_json" id="field-house-rules-json" value="{}" />
 
     <!-- URL -->
@@ -65,9 +56,7 @@
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
         Listing URL <span class="text-gray-400 font-normal">(optional)</span>
       </label>
-      <input type="url" name="url" id="field-url"
-        placeholder="https://qasa.com/se/en/home/..."
-        class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
+      <input type="url" name="url" id="field-url" placeholder="https://qasa.com/se/en/home/..." class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
                text-gray-900 dark:text-gray-100 text-sm px-3 py-2 focus:outline-none
                focus:ring-2 focus:ring-brand-500 placeholder-gray-400" />
     </div>
@@ -77,8 +66,7 @@
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
         Title <span class="text-red-500">*</span>
       </label>
-      <input type="text" name="title" id="field-title" required
-        placeholder="e.g. Bright 2-room apartment in Södermalm"
+      <input type="text" name="title" id="field-title" required placeholder="e.g. Bright 2-room apartment in Södermalm"
         class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
                text-gray-900 dark:text-gray-100 text-sm px-3 py-2 focus:outline-none
                focus:ring-2 focus:ring-brand-500 placeholder-gray-400" />
@@ -88,17 +76,13 @@
     <div class="p-5 grid grid-cols-2 gap-4">
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address</label>
-        <input type="text" name="address" id="field-address"
-          placeholder="Exempelgatan 12, Stockholm"
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
+        <input type="text" name="address" id="field-address" placeholder="Exempelgatan 12, Stockholm" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
                  text-gray-900 dark:text-gray-100 text-sm px-3 py-2 focus:outline-none
                  focus:ring-2 focus:ring-brand-500 placeholder-gray-400" />
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">District</label>
-        <input type="text" name="district" id="field-district"
-          placeholder="e.g. Södermalm"
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
+        <input type="text" name="district" id="field-district" placeholder="e.g. Södermalm" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
                  text-gray-900 dark:text-gray-100 text-sm px-3 py-2 focus:outline-none
                  focus:ring-2 focus:ring-brand-500 placeholder-gray-400" />
       </div>
@@ -149,15 +133,13 @@
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Rent (kr/mo) <span class="text-red-500">*</span>
         </label>
-        <input type="number" name="price_sek" id="field-price" required min="0" placeholder="13000"
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
+        <input type="number" name="price_sek" id="field-price" required min="0" placeholder="13000" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
                  text-gray-900 dark:text-gray-100 text-sm px-3 py-2 focus:outline-none
                  focus:ring-2 focus:ring-brand-500 placeholder-gray-400" />
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Service fee (kr)</label>
-        <input type="number" name="service_fee_sek" id="field-service-fee" min="0" placeholder="773"
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
+        <input type="number" name="service_fee_sek" id="field-service-fee" min="0" placeholder="773" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
                  text-gray-900 dark:text-gray-100 text-sm px-3 py-2 focus:outline-none
                  focus:ring-2 focus:ring-brand-500 placeholder-gray-400" />
         <p class="text-xs text-gray-400 mt-0.5">Monthly cost = rent + fee</p>
@@ -166,22 +148,19 @@
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Rooms <span class="text-red-500">*</span>
         </label>
-        <input type="number" name="rooms" id="field-rooms" required min="1" max="20" placeholder="2"
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
+        <input type="number" name="rooms" id="field-rooms" required min="1" max="20" placeholder="2" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
                  text-gray-900 dark:text-gray-100 text-sm px-3 py-2 focus:outline-none
                  focus:ring-2 focus:ring-brand-500 placeholder-gray-400" />
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Floor</label>
-        <input type="number" name="floor" id="field-floor" min="0" placeholder="3"
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
+        <input type="number" name="floor" id="field-floor" min="0" placeholder="3" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
                  text-gray-900 dark:text-gray-100 text-sm px-3 py-2 focus:outline-none
                  focus:ring-2 focus:ring-brand-500 placeholder-gray-400" />
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Size (m²)</label>
-        <input type="number" name="size_sqm" id="field-size" min="1" placeholder="62"
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
+        <input type="number" name="size_sqm" id="field-size" min="1" placeholder="62" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
                  text-gray-900 dark:text-gray-100 text-sm px-3 py-2 focus:outline-none
                  focus:ring-2 focus:ring-brand-500 placeholder-gray-400" />
       </div>
@@ -227,7 +206,7 @@
       <div class="flex flex-wrap gap-4">
         <label class="flex items-center gap-2 cursor-pointer">
           <input type="checkbox" id="field-electricity" name="electricity_included_check"
-                 class="rounded border-gray-300 dark:border-gray-600 text-brand-600 focus:ring-brand-500" />
+            class="rounded border-gray-300 dark:border-gray-600 text-brand-600 focus:ring-brand-500" />
           <span class="text-sm text-gray-700 dark:text-gray-300">Electricity included</span>
         </label>
         <input type="hidden" name="electricity_included" id="field-electricity-value" value="" />
@@ -240,33 +219,33 @@
       <input type="hidden" name="amenities_json" id="field-amenities-json" value="[]" />
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-y-2 gap-x-4">
         {% set all_amenities = [
-          ("balcony",         "Balcony"),
-          ("rooftop_terrace", "Rooftop terrace"),
-          ("garden",          "Garden"),
-          ("sauna",           "Sauna"),
-          ("pool",            "Pool"),
-          ("fridge",          "Fridge"),
-          ("freezer",         "Freezer"),
-          ("microwave",       "Microwave"),
-          ("oven",            "Oven"),
-          ("stove",           "Stove"),
-          ("dishwasher",      "Dishwasher"),
-          ("washing_machine", "Washing machine"),
-          ("tumble_dryer",    "Tumble dryer"),
-          ("shower",          "Shower"),
-          ("bathtub",         "Bathtub"),
-          ("toilet",          "Toilet"),
-          ("elevator",        "Elevator"),
-          ("storage_room",    "Storage room"),
-          ("parking",         "Parking"),
-          ("bike_storage",    "Bike storage"),
-          ("internet",        "Internet"),
-          ("television",      "Television"),
+        ("balcony", "Balcony"),
+        ("rooftop_terrace", "Rooftop terrace"),
+        ("garden", "Garden"),
+        ("sauna", "Sauna"),
+        ("pool", "Pool"),
+        ("fridge", "Fridge"),
+        ("freezer", "Freezer"),
+        ("microwave", "Microwave"),
+        ("oven", "Oven"),
+        ("stove", "Stove"),
+        ("dishwasher", "Dishwasher"),
+        ("washing_machine", "Washing machine"),
+        ("tumble_dryer", "Tumble dryer"),
+        ("shower", "Shower"),
+        ("bathtub", "Bathtub"),
+        ("toilet", "Toilet"),
+        ("elevator", "Elevator"),
+        ("storage_room", "Storage room"),
+        ("parking", "Parking"),
+        ("bike_storage", "Bike storage"),
+        ("internet", "Internet"),
+        ("television", "Television"),
         ] %}
         {% for key, label in all_amenities %}
         <label class="flex items-center gap-2 cursor-pointer">
           <input type="checkbox" name="amenity_{{ key }}" id="field-amenity-{{ key }}"
-                 class="rounded border-gray-300 dark:border-gray-600 text-brand-600 focus:ring-brand-500" />
+            class="rounded border-gray-300 dark:border-gray-600 text-brand-600 focus:ring-brand-500" />
           <span class="text-sm text-gray-700 dark:text-gray-300">{{ label }}</span>
         </label>
         {% endfor %}
@@ -282,9 +261,7 @@
     <!-- Description -->
     <div class="p-5">
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-      <textarea name="description" id="field-description" rows="6"
-        placeholder="Listing description..."
-        class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
+      <textarea name="description" id="field-description" rows="6" placeholder="Listing description..." class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
                text-gray-900 dark:text-gray-100 text-sm px-3 py-2 focus:outline-none
                focus:ring-2 focus:ring-brand-500 placeholder-gray-400 resize-y"></textarea>
     </div>
@@ -302,8 +279,7 @@
         ← Back
       </button>
       <div class="flex items-center gap-3">
-        <a href="{{ url_for('listings.index') }}"
-           class="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-700
+        <a href="{{ url_for('listings.index') }}" class="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-700
                   dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
           Cancel
         </a>
@@ -326,205 +302,204 @@
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 <script>
-// ── Mode switching ──────────────────────────────────────────────────────────
+  // ── Mode switching ──────────────────────────────────────────────────────────
 
-function showManualMode() {
-  document.getElementById("url-section").classList.add("hidden");
-  document.getElementById("listing-form").classList.remove("hidden");
-  document.getElementById("field-source").value = "manual";
-}
-
-function showUrlMode() {
-  document.getElementById("url-section").classList.remove("hidden");
-  document.getElementById("listing-form").classList.add("hidden");
-}
-
-// ── Electricity checkbox sync ───────────────────────────────────────────────
-document.getElementById("field-electricity").addEventListener("change", function() {
-  document.getElementById("field-electricity-value").value = this.checked ? "true" : "false";
-});
-
-// ── URL extraction ──────────────────────────────────────────────────────────
-
-async function extractUrl() {
-  const url = document.getElementById("qasa-url-input").value.trim();
-  if (!url) { showExtractError("Please paste a Qasa listing URL first."); return; }
-
-  setExtracting(true);
-  clearExtractError();
-
-  try {
-    const res = await fetch("/listings/extract-url", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url }),
-    });
-    const data = await res.json();
-
-    if (!res.ok) {
-      showExtractError(data.error || "Extraction failed.");
-      document.getElementById("field-url").value = url;
-      return;
-    }
-
-    fillForm(data);
+  function showManualMode() {
     document.getElementById("url-section").classList.add("hidden");
     document.getElementById("listing-form").classList.remove("hidden");
-    showToast("Details extracted — please review before saving.", "success", 4000);
-
-  } catch (err) {
-    showExtractError("Request failed. Is the server running?");
-  } finally {
-    setExtracting(false);
-  }
-}
-
-function setExtracting(active) {
-  const btn = document.getElementById("extract-btn");
-  document.getElementById("extract-btn-text").textContent = active ? "Extracting…" : "Extract";
-  document.getElementById("extract-spinner").classList.toggle("hidden", !active);
-  btn.disabled = active;
-}
-
-function showExtractError(msg) {
-  const el = document.getElementById("extract-error");
-  el.textContent = msg;
-  el.classList.remove("hidden");
-}
-function clearExtractError() {
-  document.getElementById("extract-error").classList.add("hidden");
-}
-
-// ── Fill form from extracted data ───────────────────────────────────────────
-
-function fillForm(data) {
-  setField("field-source",       data.source || "qasa");
-  setField("field-url",          data.url || "");
-  setField("field-title",        data.title || "");
-  setField("field-address",      data.address || "");
-  setField("field-district",     data.district || "");
-  setField("field-price",        data.price_sek || "");
-  setField("field-service-fee",  data.service_fee_sek || "");
-  setField("field-rooms",        data.rooms || "");
-  setField("field-floor",        data.floor != null ? data.floor : "");
-  setField("field-size",         data.size_sqm || "");
-  setField("field-available-from", data.available_from || "");
-  setTextarea("field-description", data.description || "");
-
-  // Home type, furnishing, rental type
-  setSelect("field-home-type",  data.home_type || "");
-  setSelect("field-furnishing", data.furnishing || "");
-  setSelect("field-is-shared",  data.is_shared != null ? String(data.is_shared) : "");
-
-  // Deposit
-  setSelect("field-deposit", data.deposit_months ? String(data.deposit_months) : "");
-
-  // Available until
-  if (data.available_until === "until_further_notice") {
-    setSelect("field-available-until", "until_further_notice");
-  } else if (data.available_until) {
-    // Specific date — use the text input instead
-    document.getElementById("field-available-until").disabled = true;
-    const di = document.getElementById("field-available-until-date");
-    di.classList.remove("hidden");
-    di.value = data.available_until;
+    document.getElementById("field-source").value = "manual";
   }
 
-  // Electricity
-  if (data.electricity_included != null) {
-    const chk = document.getElementById("field-electricity");
-    chk.checked = !!data.electricity_included;
-    document.getElementById("field-electricity-value").value = data.electricity_included ? "true" : "false";
+  function showUrlMode() {
+    document.getElementById("url-section").classList.remove("hidden");
+    document.getElementById("listing-form").classList.add("hidden");
   }
 
-  // Amenities — tick all checkboxes for detected amenity keys
-  const amenities = Array.isArray(data.amenities) ? data.amenities : [];
-  document.getElementById("field-amenities-json").value = JSON.stringify(amenities);
-  // Clear all first, then tick the detected ones
-  document.querySelectorAll("[id^='field-amenity-']").forEach(cb => cb.checked = false);
-  amenities.forEach(key => {
-    const cb = document.getElementById("field-amenity-" + key);
-    if (cb) cb.checked = true;
+  // ── Electricity checkbox sync ───────────────────────────────────────────────
+  document.getElementById("field-electricity").addEventListener("change", function () {
+    document.getElementById("field-electricity-value").value = this.checked ? "true" : "false";
   });
 
-  // House rules
-  if (data.house_rules && Object.keys(data.house_rules).length) {
-    document.getElementById("field-house-rules-json").value = JSON.stringify(data.house_rules);
-    showHouseRules(data.house_rules);
+  // ── URL extraction ──────────────────────────────────────────────────────────
+
+  async function extractUrl() {
+    const url = document.getElementById("qasa-url-input").value.trim();
+    if (!url) { showExtractError("Please paste a Qasa listing URL first."); return; }
+
+    setExtracting(true);
+    clearExtractError();
+
+    try {
+      const res = await fetch("/listings/extract-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showExtractError(data.error || "Extraction failed.");
+        document.getElementById("field-url").value = url;
+        return;
+      }
+
+      fillForm(data);
+      document.getElementById("url-section").classList.add("hidden");
+      document.getElementById("listing-form").classList.remove("hidden");
+      showToast("Details extracted — please review before saving.", "success", 4000);
+
+    } catch (err) {
+      showExtractError("Request failed. Is the server running?");
+    } finally {
+      setExtracting(false);
+    }
   }
 
-  // Images
-  const images = Array.isArray(data.images) ? data.images : [];
-  document.getElementById("field-images-json").value = JSON.stringify(images);
-  showImagePreviews(images);
-}
-
-function setField(id, value) {
-  const el = document.getElementById(id);
-  if (el) el.value = value;
-}
-function setTextarea(id, value) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = value;
-}
-function setSelect(id, value) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  for (const opt of el.options) {
-    if (opt.value === value) { el.value = value; break; }
+  function setExtracting(active) {
+    const btn = document.getElementById("extract-btn");
+    document.getElementById("extract-btn-text").textContent = active ? "Extracting…" : "Extract";
+    document.getElementById("extract-spinner").classList.toggle("hidden", !active);
+    btn.disabled = active;
   }
-}
-function setCheckbox(id, checked) {
-  const el = document.getElementById(id);
-  if (el) el.checked = checked;
-}
 
-function showHouseRules(rules) {
-  const section = document.getElementById("house-rules-section");
-  const container = document.getElementById("house-rules-display");
-  container.innerHTML = "";
+  function showExtractError(msg) {
+    const el = document.getElementById("extract-error");
+    el.textContent = msg;
+    el.classList.remove("hidden");
+  }
+  function clearExtractError() {
+    document.getElementById("extract-error").classList.add("hidden");
+  }
 
-  const items = [
-    { key: "pets_allowed",           trueLabel: "Pets allowed",             falseLabel: "No pets" },
-    { key: "smoking_allowed",        trueLabel: "Smoking allowed",          falseLabel: "No smoking" },
-    { key: "wheelchair_accessible",  trueLabel: "Wheelchair accessible",    falseLabel: "Not wheelchair accessible" },
-  ];
-  items.forEach(({ key, trueLabel, falseLabel }) => {
-    if (key in rules) {
-      const allowed = rules[key];
+  // ── Fill form from extracted data ───────────────────────────────────────────
+
+  function fillForm(data) {
+    setField("field-source", data.source || "qasa");
+    setField("field-url", data.url || "");
+    setField("field-title", data.title || "");
+    setField("field-address", data.address || "");
+    setField("field-district", data.district || "");
+    setField("field-price", data.price_sek || "");
+    setField("field-service-fee", data.service_fee_sek || "");
+    setField("field-rooms", data.rooms || "");
+    setField("field-floor", data.floor != null ? data.floor : "");
+    setField("field-size", data.size_sqm || "");
+    setField("field-available-from", data.available_from || "");
+    setTextarea("field-description", data.description || "");
+
+    // Home type, furnishing, rental type
+    setSelect("field-home-type", data.home_type || "");
+    setSelect("field-furnishing", data.furnishing || "");
+    setSelect("field-is-shared", data.is_shared != null ? String(data.is_shared) : "");
+
+    // Deposit
+    setSelect("field-deposit", data.deposit_months ? String(data.deposit_months) : "");
+
+    // Available until
+    if (data.available_until === "until_further_notice") {
+      setSelect("field-available-until", "until_further_notice");
+    } else if (data.available_until) {
+      // Specific date — use the text input instead
+      document.getElementById("field-available-until").disabled = true;
+      const di = document.getElementById("field-available-until-date");
+      di.classList.remove("hidden");
+      di.value = data.available_until;
+    }
+
+    // Electricity
+    if (data.electricity_included != null) {
+      const chk = document.getElementById("field-electricity");
+      chk.checked = !!data.electricity_included;
+      document.getElementById("field-electricity-value").value = data.electricity_included ? "true" : "false";
+    }
+
+    // Amenities — tick all checkboxes for detected amenity keys
+    const amenities = Array.isArray(data.amenities) ? data.amenities : [];
+    document.getElementById("field-amenities-json").value = JSON.stringify(amenities);
+    // Clear all first, then tick the detected ones
+    document.querySelectorAll("[id^='field-amenity-']").forEach(cb => cb.checked = false);
+    amenities.forEach(key => {
+      const cb = document.getElementById("field-amenity-" + key);
+      if (cb) cb.checked = true;
+    });
+
+    // House rules
+    if (data.house_rules && Object.keys(data.house_rules).length) {
+      document.getElementById("field-house-rules-json").value = JSON.stringify(data.house_rules);
+      showHouseRules(data.house_rules);
+    }
+
+    // Images
+    const images = Array.isArray(data.images) ? data.images : [];
+    document.getElementById("field-images-json").value = JSON.stringify(images);
+    showImagePreviews(images);
+  }
+
+  function setField(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.value = value;
+  }
+  function setTextarea(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  }
+  function setSelect(id, value) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    for (const opt of el.options) {
+      if (opt.value === value) { el.value = value; break; }
+    }
+  }
+  function setCheckbox(id, checked) {
+    const el = document.getElementById(id);
+    if (el) el.checked = checked;
+  }
+
+  function showHouseRules(rules) {
+    const section = document.getElementById("house-rules-section");
+    const container = document.getElementById("house-rules-display");
+    container.innerHTML = "";
+
+    const items = [
+      { key: "pets_allowed", trueLabel: "Pets allowed", falseLabel: "No pets" },
+      { key: "smoking_allowed", trueLabel: "Smoking allowed", falseLabel: "No smoking" },
+      { key: "wheelchair_accessible", trueLabel: "Wheelchair accessible", falseLabel: "Not wheelchair accessible" },
+    ];
+    items.forEach(({ key, trueLabel, falseLabel }) => {
+      if (key in rules) {
+        const allowed = rules[key];
+        const badge = document.createElement("span");
+        badge.textContent = allowed ? trueLabel : falseLabel;
+        badge.className = `text-xs px-2 py-1 rounded-full font-medium ${allowed
+            ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300"
+            : "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
+          }`;
+        container.appendChild(badge);
+      }
+    });
+    if (rules.max_tenants) {
       const badge = document.createElement("span");
-      badge.textContent = allowed ? trueLabel : falseLabel;
-      badge.className = `text-xs px-2 py-1 rounded-full font-medium ${
-        allowed
-          ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300"
-          : "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
-      }`;
+      badge.textContent = `Up to ${rules.max_tenants} tenants`;
+      badge.className = "text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium";
       container.appendChild(badge);
     }
-  });
-  if (rules.max_tenants) {
-    const badge = document.createElement("span");
-    badge.textContent = `Up to ${rules.max_tenants} tenants`;
-    badge.className = "text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium";
-    container.appendChild(badge);
+    if (container.children.length) section.classList.remove("hidden");
   }
-  if (container.children.length) section.classList.remove("hidden");
-}
 
-function showImagePreviews(images) {
-  const section = document.getElementById("images-preview-section");
-  const container = document.getElementById("images-preview");
-  if (!images.length) return;
-  container.innerHTML = "";
-  images.forEach(url => {
-    const img = document.createElement("img");
-    img.src = url;
-    img.alt = "Listing image";
-    img.className = "w-20 h-16 object-cover rounded-lg border border-gray-200 dark:border-gray-600";
-    img.onerror = () => img.remove();
-    container.appendChild(img);
-  });
-  section.classList.remove("hidden");
-}
+  function showImagePreviews(images) {
+    const section = document.getElementById("images-preview-section");
+    const container = document.getElementById("images-preview");
+    if (!images.length) return;
+    container.innerHTML = "";
+    images.forEach(url => {
+      const img = document.createElement("img");
+      img.src = url;
+      img.alt = "Listing image";
+      img.className = "w-20 h-16 object-cover rounded-lg border border-gray-200 dark:border-gray-600";
+      img.onerror = () => img.remove();
+      container.appendChild(img);
+    });
+    section.classList.remove("hidden");
+  }
 </script>
 {% endblock %}
