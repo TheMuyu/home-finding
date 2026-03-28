@@ -39,19 +39,25 @@ def get_commute(from_lat: float, from_lng: float, to_lat: float, to_lng: float) 
             "TRAFIKLAB_RESROBOT_KEY not set — skipping commute calculation")
         return None
 
+    dep_date, dep_time_str = _next_weekday_8am_sthlm()
+
     try:
+        params = {
+            "originCoordLat": from_lat,
+            "originCoordLong": from_lng,
+            "destCoordLat": to_lat,
+            "destCoordLong": to_lng,
+            "accessId": TRAFIKLAB_RESROBOT_KEY,
+            "format": "json",
+            "numF": 3,          # fetch 3 options, pick best
+            "passlist": 0,
+        }
+        if dep_date:
+            params["date"] = dep_date
+            params["time"] = dep_time_str
         resp = requests.get(
             f"{_RESROBOT_BASE}/trip",
-            params={
-                "originCoordLat": from_lat,
-                "originCoordLong": from_lng,
-                "destCoordLat": to_lat,
-                "destCoordLong": to_lng,
-                "accessId": TRAFIKLAB_RESROBOT_KEY,
-                "format": "json",
-                "numF": 3,          # fetch 3 options, pick best
-                "passlist": 0,
-            },
+            params=params,
             timeout=30,
         )
         resp.raise_for_status()
@@ -153,6 +159,27 @@ def get_nearby_stops(lat: float, lng: float, max_results: int = 5) -> list[dict]
             "products": stop.get("products", 0),
         })
     return stops
+
+
+def _next_weekday_8am_sthlm():
+    """Return (date_str, time_str) tuple for next Mon–Fri at 08:00 Stockholm time (CET/CEST)."""
+    import datetime
+    now_utc = datetime.datetime.utcnow()
+    year = now_utc.year
+    mar31 = datetime.datetime(year, 3, 31)
+    dst_start = mar31 - datetime.timedelta(days=(mar31.weekday() + 1) % 7)
+    oct31 = datetime.datetime(year, 10, 31)
+    dst_end = oct31 - datetime.timedelta(days=(oct31.weekday() + 1) % 7)
+    utc_offset = 2 if dst_start <= now_utc < dst_end else 1
+    sthlm_now = now_utc + datetime.timedelta(hours=utc_offset)
+    for days_ahead in range(7):
+        candidate = sthlm_now + datetime.timedelta(days=days_ahead)
+        if candidate.weekday() < 5:
+            target = candidate.replace(
+                hour=8, minute=0, second=0, microsecond=0)
+            if target > sthlm_now:
+                return target.strftime("%Y-%m-%d"), "08:00:00"
+    return None, None
 
 
 def _next_weekday_8am_unix() -> int | None:

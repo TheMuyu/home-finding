@@ -101,7 +101,8 @@ def districts_page():
     district_counts = {d.lower(): c for d, c in counts_raw}
 
     # Annotate each district with listing count + preferred flag
-    preferred = [p.lower() for p in (settings_dict.get("preferred_districts") or [])]
+    preferred = [p.lower()
+                 for p in (settings_dict.get("preferred_districts") or [])]
     for d in districts:
         d["listing_count"] = district_counts.get(d["name"].lower(), 0)
         d["is_preferred"] = d["name"].lower() in preferred
@@ -140,11 +141,13 @@ def save_listing():
     except (TypeError, ValueError):
         rooms = 1
     try:
-        floor = int(request.form.get("floor")) if request.form.get("floor") else None
+        floor = int(request.form.get("floor")
+                    ) if request.form.get("floor") else None
     except (TypeError, ValueError):
         floor = None
     try:
-        size_sqm = int(request.form.get("size_sqm")) if request.form.get("size_sqm") else None
+        size_sqm = int(request.form.get("size_sqm")
+                       ) if request.form.get("size_sqm") else None
     except (TypeError, ValueError):
         size_sqm = None
 
@@ -157,7 +160,8 @@ def save_listing():
         else:
             for fmt in ("%Y-%m-%d", "%d %b %Y", "%b %d, %Y", "%B %d, %Y", "%d %B %Y"):
                 try:
-                    available_from = datetime.strptime(available_from_str, fmt).date()
+                    available_from = datetime.strptime(
+                        available_from_str, fmt).date()
                     break
                 except ValueError:
                     continue
@@ -186,14 +190,15 @@ def save_listing():
         except (ValueError, TypeError):
             pass
     has_washing_machine = "washing_machine" in amenities
-    has_dryer           = "tumble_dryer"    in amenities
-    has_dishwasher      = "dishwasher"      in amenities
+    has_dryer = "tumble_dryer" in amenities
+    has_dishwasher = "dishwasher" in amenities
 
     # Listing character
     home_type = request.form.get("home_type", "").strip() or None
     furnishing = request.form.get("furnishing", "").strip() or None
     is_shared_str = request.form.get("is_shared", "")
-    is_shared = True if is_shared_str == "true" else (False if is_shared_str == "false" else None)
+    is_shared = True if is_shared_str == "true" else (
+        False if is_shared_str == "false" else None)
 
     # Rent breakdown
     try:
@@ -272,7 +277,8 @@ def save_listing():
             from services.enrichment import enrich_listing_async
             enrich_listing_async(current_app._get_current_object(), listing.id)
         except Exception as e:
-            logger.warning(f"Could not start enrichment for listing {listing.id}: {e}")
+            logger.warning(
+                f"Could not start enrichment for listing {listing.id}: {e}")
         flash("Listing saved successfully!", "success")
         return redirect(url_for("listings.index"))
     except IntegrityError:
@@ -284,6 +290,21 @@ def save_listing():
         logger.error(f"Failed to save listing: {e}")
         flash("Failed to save listing. Please try again.", "error")
         return redirect(url_for("listings.add_listing_page"))
+
+
+# ── Delete listing ────────────────────────────────────────────────────────────
+
+@listings_bp.route("/listings/<int:listing_id>/delete", methods=["POST"])
+def delete_listing(listing_id):
+    listing = Listing.query.get_or_404(listing_id)
+    try:
+        db.session.delete(listing)
+        db.session.commit()
+        return jsonify({"success": True, "id": listing_id})
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Failed to delete listing {listing_id}: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 # ── URL extraction endpoint ────────────────────────────────────────────────────
@@ -336,7 +357,8 @@ def bulk_import():
         if not url:
             continue
         if "qasa.se" not in url and "qasa.com" not in url:
-            results.append({"url": url, "status": "error", "error": "Not a Qasa URL"})
+            results.append({"url": url, "status": "error",
+                           "error": "Not a Qasa URL"})
             continue
 
         try:
@@ -346,7 +368,8 @@ def bulk_import():
             continue
 
         if item is None:
-            results.append({"url": url, "status": "error", "error": "Could not extract listing data"})
+            results.append({"url": url, "status": "error",
+                           "error": "Could not extract listing data"})
             continue
 
         amenities = item.get("amenities") or []
@@ -380,34 +403,44 @@ def bulk_import():
         existing = Listing.query.filter_by(url=item.get("url") or url).first()
         if existing:
             existing.title = item.get("title", existing.title)
-            existing.description = item.get("description", existing.description)
+            existing.description = item.get(
+                "description", existing.description)
             existing.address = item.get("address", existing.address)
             existing.district = item.get("district", existing.district)
             existing.price_sek = item.get("price_sek") or existing.price_sek
             existing.rooms = item.get("rooms") or existing.rooms
-            existing.floor = item.get("floor") if item.get("floor") is not None else existing.floor
+            existing.floor = item.get("floor") if item.get(
+                "floor") is not None else existing.floor
             existing.size_sqm = item.get("size_sqm") or existing.size_sqm
-            existing.available_until = item.get("available_until") or existing.available_until
+            existing.available_until = item.get(
+                "available_until") or existing.available_until
             existing.amenities = amenities or existing.amenities
             existing.has_washing_machine = "washing_machine" in amenities
             existing.has_dryer = "tumble_dryer" in amenities
             existing.has_dishwasher = "dishwasher" in amenities
             existing.home_type = item.get("home_type") or existing.home_type
             existing.furnishing = item.get("furnishing") or existing.furnishing
-            existing.is_shared = item.get("is_shared") if item.get("is_shared") is not None else existing.is_shared
-            existing.service_fee_sek = item.get("service_fee_sek") or existing.service_fee_sek
-            existing.electricity_included = item.get("electricity_included") if item.get("electricity_included") is not None else existing.electricity_included
-            existing.deposit_months = item.get("deposit_months") or existing.deposit_months
-            existing.house_rules = item.get("house_rules") or existing.house_rules
+            existing.is_shared = item.get("is_shared") if item.get(
+                "is_shared") is not None else existing.is_shared
+            existing.service_fee_sek = item.get(
+                "service_fee_sek") or existing.service_fee_sek
+            existing.electricity_included = item.get("electricity_included") if item.get(
+                "electricity_included") is not None else existing.electricity_included
+            existing.deposit_months = item.get(
+                "deposit_months") or existing.deposit_months
+            existing.house_rules = item.get(
+                "house_rules") or existing.house_rules
             existing.images = item.get("images") or existing.images
             # Preserve: is_saved, application_status, application_date, notes, ai_score, ai_comment, ai_pros, ai_cons
             try:
                 db.session.commit()
-                results.append({"url": url, "status": "updated", "title": item.get("title", url)})
+                results.append({"url": url, "status": "updated",
+                               "title": item.get("title", url)})
             except Exception as e:
                 db.session.rollback()
                 logger.error(f"Failed to update listing {url}: {e}")
-                results.append({"url": url, "status": "error", "error": str(e)})
+                results.append(
+                    {"url": url, "status": "error", "error": str(e)})
         else:
             db.session.add(listing)
             try:
@@ -415,17 +448,21 @@ def bulk_import():
                 try:
                     from flask import current_app
                     from services.enrichment import enrich_listing_async
-                    enrich_listing_async(current_app._get_current_object(), listing.id)
+                    enrich_listing_async(
+                        current_app._get_current_object(), listing.id)
                 except Exception:
                     pass
-                results.append({"url": url, "status": "saved", "title": item.get("title", url)})
+                results.append({"url": url, "status": "saved",
+                               "title": item.get("title", url)})
             except IntegrityError:
                 db.session.rollback()
-                results.append({"url": url, "status": "error", "error": "Unexpected duplicate conflict"})
+                results.append({"url": url, "status": "error",
+                               "error": "Unexpected duplicate conflict"})
             except Exception as e:
                 db.session.rollback()
                 logger.error(f"Failed to save bulk listing {url}: {e}")
-                results.append({"url": url, "status": "error", "error": str(e)})
+                results.append(
+                    {"url": url, "status": "error", "error": str(e)})
 
     saved = sum(1 for r in results if r["status"] == "saved")
     updated = sum(1 for r in results if r["status"] == "updated")
@@ -481,10 +518,12 @@ def debug_url():
 
             response = None
             try:
-                response = page.goto(url, wait_until="networkidle", timeout=30_000)
+                response = page.goto(
+                    url, wait_until="networkidle", timeout=30_000)
             except Exception:
                 try:
-                    response = page.goto(url, wait_until="domcontentloaded", timeout=20_000)
+                    response = page.goto(
+                        url, wait_until="domcontentloaded", timeout=20_000)
                     page.wait_for_timeout(3_000)
                 except Exception as e:
                     result["error"] = f"Navigation failed: {e}"
@@ -506,7 +545,8 @@ def debug_url():
                     nd = _json.loads(next_data_text)
                     result["next_data_keys"] = list(nd.keys())
                     page_props = nd.get("props", {}).get("pageProps", {})
-                    result["next_data_page_props_keys"] = list(page_props.keys())
+                    result["next_data_page_props_keys"] = list(
+                        page_props.keys())
                     # First 3000 chars of raw JSON to inspect structure
                     result["next_data_snippet"] = next_data_text[:3000]
             except Exception as e:

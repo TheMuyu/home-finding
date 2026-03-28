@@ -379,11 +379,8 @@ def transit_route(listing_id):
     Fetch transit route from listing to work address using Google Maps Directions API.
     Results are cached in the DB (transit_route column). Pass ?force=1 to refresh.
     Always uses next weekday 08:00 Stockholm time as departure for consistent results.
+    Cached routes are served from DB even without an API key or internet connection.
     """
-    from config import GOOGLE_MAPS_API_KEY
-    if not GOOGLE_MAPS_API_KEY:
-        return jsonify({"success": False, "error": "GOOGLE_MAPS_API_KEY not configured"}), 400
-
     listing = Listing.query.get_or_404(listing_id)
     if not listing.lat or not listing.lng:
         return jsonify({"success": False, "error": "Listing has no coordinates"}), 400
@@ -393,13 +390,18 @@ def transit_route(listing_id):
     if not settings or not settings.work_lat or not settings.work_lng:
         return jsonify({"success": False, "error": "Work address not set in Settings"}), 400
 
-    # Return cached route unless force-refresh requested
+    # Return cached route unless force-refresh requested — no API key needed for cache
     force = request.args.get("force", "").lower() in ("1", "true")
     if listing.transit_route and not force:
         cached = listing.transit_route
         cached["work_lat"] = settings.work_lat
         cached["work_lng"] = settings.work_lng
         return jsonify({"success": True, **cached})
+
+    # No cache (or force refresh) — need to call Google Maps API
+    from config import GOOGLE_MAPS_API_KEY
+    if not GOOGLE_MAPS_API_KEY:
+        return jsonify({"success": False, "error": "GOOGLE_MAPS_API_KEY not configured"}), 400
 
     import requests as _requests
     try:

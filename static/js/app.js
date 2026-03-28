@@ -190,6 +190,39 @@ async function updateStatus(listingId, status) {
   }
 }
 
+async function deleteListing(listingId) {
+  if (!confirm("Permanently delete this listing? This cannot be undone.")) return;
+  try {
+    const res = await fetch(`/listings/${listingId}/delete`, { method: "POST" });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      // Remove card from DOM
+      const wrapper = document.querySelector(`[data-listing-id="${listingId}"]`);
+      if (wrapper) wrapper.remove();
+      // Remove marker from map
+      const marker = window._markerById && window._markerById[listingId];
+      if (marker) {
+        if (window._clusterGroup) window._clusterGroup.removeLayer(marker);
+        else if (window._map) window._map.removeLayer(marker);
+        delete window._markerById[listingId];
+      }
+      delete (window._listingById || {})[listingId];
+      clearMapOverlays();
+      // Update listing count
+      const countEl = document.getElementById("listings-count");
+      if (countEl) {
+        const remaining = document.querySelectorAll(".listing-card-wrapper").length;
+        countEl.textContent = `(${remaining})`;
+      }
+      showToast("Listing deleted.", "success", 2000);
+    } else {
+      showToast("Delete failed: " + (data.error || "unknown error"), "error");
+    }
+  } catch {
+    showToast("Delete request failed.", "error");
+  }
+}
+
 async function reEnrich(listingId) {
   const btn = document.getElementById(`reenrich-btn-${listingId}`);
   if (btn) {
