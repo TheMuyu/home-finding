@@ -120,6 +120,47 @@ def enrich_all_listings():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@api_bp.route("/score/<int:listing_id>", methods=["POST"])
+def score_listing(listing_id):
+    """Score a single listing with Claude AI."""
+    from config import ANTHROPIC_API_KEY
+    if not ANTHROPIC_API_KEY:
+        return jsonify({"success": False, "error": "ANTHROPIC_API_KEY not configured"}), 400
+
+    Listing.query.get_or_404(listing_id)
+    try:
+        from services.ai_scorer import score_listing_sync
+        result = score_listing_sync(current_app._get_current_object(), listing_id)
+        listing = Listing.query.get(listing_id)
+        return jsonify({**result, "listing": listing.to_dict()})
+    except Exception as e:
+        logger.error(f"Score endpoint failed for listing {listing_id}: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@api_bp.route("/score-all", methods=["POST"])
+def score_all_listings():
+    """Kick off background AI scoring for all unscored listings."""
+    from config import ANTHROPIC_API_KEY
+    if not ANTHROPIC_API_KEY:
+        return jsonify({"success": False, "error": "ANTHROPIC_API_KEY not configured"}), 400
+
+    try:
+        from services.ai_scorer import score_all_async
+        unscored_count = Listing.query.filter(Listing.ai_score.is_(None)).count()
+        if unscored_count == 0:
+            return jsonify({"success": True, "message": "All listings already scored.", "queued": 0})
+        score_all_async(current_app._get_current_object())
+        return jsonify({
+            "success": True,
+            "message": f"Scoring {unscored_count} listing(s) in background.",
+            "queued": unscored_count,
+        })
+    except Exception as e:
+        logger.error(f"Score-all endpoint failed: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @api_bp.route("/seed", methods=["POST"])
 def run_seed():
     try:

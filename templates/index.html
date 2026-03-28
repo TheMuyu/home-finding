@@ -34,6 +34,17 @@
           Seed
         </button>
         <button
+          id="score-all-btn"
+          onclick="scoreAll()"
+          class="text-xs px-3 py-1.5 rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1.5"
+          title="Score all unscored listings with Claude AI">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+          </svg>
+          <span id="score-all-btn-text">Score All</span>
+        </button>
+        <button
           id="enrich-btn"
           onclick="enrichAll()"
           class="text-xs px-3 py-1.5 rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1.5"
@@ -155,18 +166,21 @@
               </div>
 
               <div class="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                <!-- AI score badge placeholder -->
+                <!-- AI score badge -->
                 {% if listing.ai_score is not none %}
                 <span class="text-xs px-1.5 py-0.5 rounded font-semibold
                   {% if listing.ai_score >= 70 %}bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300
                   {% elif listing.ai_score >= 40 %}bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300
-                  {% else %}bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300{% endif %}">
+                  {% else %}bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300{% endif %}"
+                  id="score-badge-{{ listing.id }}">
                   AI {{ listing.ai_score }}
                 </span>
                 {% else %}
-                <span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
-                  Not scored
-                </span>
+                <button onclick="event.stopPropagation(); scoreListing({{ listing.id }}, this)"
+                  id="score-btn-{{ listing.id }}"
+                  class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-purple-100 dark:hover:bg-purple-900/40 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                  Score with AI
+                </button>
                 {% endif %}
 
                 <!-- Commute badge -->
@@ -250,6 +264,69 @@
 <script>
   // Pass listings data to JS for map markers (var = global scope, accessible as window.LISTINGS_DATA)
   var LISTINGS_DATA = {{ listings_json | tojson }};
+
+  async function scoreListing(id, btn) {
+    btn.disabled = true;
+    btn.textContent = 'Scoring…';
+    try {
+      const resp = await fetch(`/api/score/${id}`, { method: 'POST' });
+      const data = await resp.json();
+      if (data.success && data.score != null) {
+        // Replace button with score badge
+        const score = data.score;
+        let colorClass = score >= 70
+          ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
+          : score >= 40
+          ? 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300'
+          : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300';
+        const badge = document.createElement('span');
+        badge.id = `score-badge-${id}`;
+        badge.className = `text-xs px-1.5 py-0.5 rounded font-semibold ${colorClass}`;
+        badge.textContent = `AI ${score}`;
+        btn.replaceWith(badge);
+        showToast(`Scored: ${score}/100`, 'success');
+      } else {
+        const msg = data.error || 'Scoring failed';
+        btn.textContent = 'Score failed';
+        btn.disabled = false;
+        showToast(msg.includes('API_KEY') ? 'Add ANTHROPIC_API_KEY to .env to enable AI scoring' : msg, 'error');
+      }
+    } catch (e) {
+      btn.textContent = 'Score with AI';
+      btn.disabled = false;
+      showToast('Scoring request failed', 'error');
+    }
+  }
+
+  async function scoreAll() {
+    const btn = document.getElementById('score-all-btn');
+    const txt = document.getElementById('score-all-btn-text');
+    btn.disabled = true;
+    txt.textContent = 'Scoring…';
+    try {
+      const resp = await fetch('/api/score-all', { method: 'POST' });
+      const data = await resp.json();
+      if (data.success) {
+        if (data.queued === 0) {
+          showToast('All listings already scored.', 'info');
+          btn.disabled = false;
+          txt.textContent = 'Score All';
+        } else {
+          showToast(`Scoring ${data.queued} listing(s)… reloading in ~${Math.ceil(data.queued * 1.5)}s`, 'success', 10000);
+          setTimeout(() => window.location.reload(), data.queued * 1500 + 3000);
+        }
+      } else {
+        const msg = data.error || 'Unknown error';
+        showToast(msg.includes('API_KEY') ? 'Add ANTHROPIC_API_KEY to .env to enable AI scoring' : msg, 'error');
+        btn.disabled = false;
+        txt.textContent = 'Score All';
+      }
+    } catch (e) {
+      showToast('Score-all request failed', 'error');
+      btn.disabled = false;
+      txt.textContent = 'Score All';
+    }
+  }
 
   async function enrichAll() {
     const btn = document.getElementById('enrich-btn');
