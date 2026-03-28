@@ -1,0 +1,105 @@
+<!-- ── Filter Bar ──────────────────────────────────────────────────── -->
+<div class="flex-shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+
+  <!-- Quick filter row -->
+  <div class="flex items-center gap-2 px-4 py-2 flex-wrap">
+    <select id="filter-sort" onchange="onFilterChange()"
+      class="text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-500 cursor-pointer">
+      <option value="newest">Newest</option>
+      <option value="score">AI Score</option>
+      <option value="price_asc">Price ↑</option>
+      <option value="price_desc">Price ↓</option>
+      <option value="commute">Commute</option>
+    </select>
+
+    <label class="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+      <input type="checkbox" id="filter-saved" onchange="onFilterChange()"
+        class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+      Saved
+    </label>
+
+    <label class="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+      <input type="checkbox" id="filter-applied" onchange="onFilterChange()"
+        class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+      Applied
+    </label>
+
+    <button onclick="toggleFilterPanel()" id="filter-toggle-btn"
+      class="ml-auto text-xs px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1.5">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h18M7 8h10M11 12h2" />
+      </svg>
+      Filters
+      <span id="filter-count-badge"
+        class="hidden text-[10px] bg-brand-600 text-white rounded-full w-4 h-4 flex items-center justify-center font-semibold">
+        0
+      </span>
+    </button>
+  </div>
+
+  <!-- Advanced filter panel (collapsible) -->
+  <div id="filter-panel" class="hidden border-t border-gray-100 dark:border-gray-700/60 px-4 py-3 space-y-3">
+    <!-- Price -->
+    <div>
+      <label class="text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1.5">Price (SEK/mo)</label>
+      <div class="flex items-center gap-2">
+        <input type="number" id="filter-price-min" placeholder="Min" oninput="onFilterChange()"
+          class="w-24 text-xs rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-500">
+        <span class="text-xs text-gray-400">–</span>
+        <input type="number" id="filter-price-max" placeholder="Max" oninput="onFilterChange()"
+          class="w-24 text-xs rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-500">
+      </div>
+    </div>
+
+    <!-- Rooms -->
+    <div>
+      <label class="text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1.5">Rooms</label>
+      <div class="flex gap-1" id="room-filter-btns">
+        {% for r in [1, 2, 3, 4] %}
+        <button onclick="toggleRoomFilter({{ r }})" data-room="{{ r }}"
+          class="room-filter-btn text-xs px-2.5 py-1 rounded border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-brand-400 transition-colors">
+          {{ r }}{% if r == 4 %}+{% endif %}
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Max commute -->
+    <div>
+      <label class="text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1.5">
+        Max commute: <span id="commute-label" class="text-gray-700 dark:text-gray-300 font-semibold">Any</span>
+      </label>
+      <input type="range" id="filter-commute" min="0" max="90" step="5" value="0"
+        oninput="updateCommuteLabel(this.value)" onchange="onFilterChange()" class="w-full">
+    </div>
+
+    <!-- Districts -->
+    <div>
+      <label class="text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1.5">Districts</label>
+      <div class="flex flex-wrap gap-1" id="district-filter-btns">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <!-- Amenities -->
+    <div>
+      <label class="text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1.5">Amenities</label>
+      <div class="flex flex-wrap gap-3">
+        {% for key, label in [('washing_machine', 'Washer'), ('tumble_dryer', 'Dryer'), ('dishwasher',
+        'Dishwasher'), ('balcony', 'Balcony'), ('elevator', 'Elevator')] %}
+        <label
+          class="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+          <input type="checkbox" data-amenity="{{ key }}" onchange="onFilterChange()"
+            class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+          {{ label }}
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <button onclick="resetFilters()"
+      class="text-xs text-red-500 hover:text-red-600 dark:hover:text-red-400 transition-colors">
+      Reset all filters
+    </button>
+  </div>
+</div>

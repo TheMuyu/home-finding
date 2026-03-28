@@ -971,7 +971,112 @@ function buildPopup(listing) {
 }
 
 /* =====================================================================
-   9. INIT
+   9. MOBILE MAP + SCORE / ENRICH ACTIONS (moved from index.html)
+   ===================================================================== */
+function toggleMobileMap() {
+  const panel = document.getElementById("map-panel");
+  const leftPanel = panel.previousElementSibling;
+  const label = document.getElementById("map-toggle-label");
+  const mapVisible = !panel.classList.contains("hidden");
+  if (mapVisible) {
+    panel.classList.add("hidden");
+    leftPanel.style.display = "";
+    if (label) label.textContent = "Map";
+  } else {
+    panel.classList.remove("hidden");
+    panel.style.display = "flex";
+    panel.style.height = "50vh";
+    leftPanel.style.display = "none";
+    if (label) label.textContent = "List";
+    setTimeout(() => { if (window._map) window._map.invalidateSize(); }, 100);
+  }
+}
+
+async function scoreListing(id, btn) {
+  if (!btn) btn = document.getElementById(`score-btn-${id}`);
+  if (btn) { btn.disabled = true; btn.textContent = 'Scoring…'; }
+  try {
+    const resp = await fetch(`/api/score/${id}`, { method: 'POST' });
+    const data = await resp.json();
+    if (data.success && data.score != null) {
+      const score = data.score;
+      const colorClass = score >= 70
+        ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
+        : score >= 40
+          ? 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300'
+          : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300';
+      const badge = document.createElement('span');
+      badge.id = `score-badge-${id}`;
+      badge.className = `text-xs px-1.5 py-0.5 rounded font-semibold ${colorClass}`;
+      badge.textContent = `AI ${score}`;
+      if (btn) btn.replaceWith(badge);
+      const wrapper = document.querySelector(`[data-listing-id="${id}"]`);
+      if (wrapper) wrapper.dataset.score = score;
+      showToast(`Scored: ${score}/100`, 'success');
+    } else {
+      const msg = data.error || 'Scoring failed';
+      if (btn) { btn.textContent = 'Retry score'; btn.disabled = false; }
+      showToast(msg.includes('API_KEY') ? 'Add ANTHROPIC_API_KEY to .env to enable AI scoring' : msg, 'error');
+    }
+  } catch (e) {
+    if (btn) { btn.textContent = 'Score with AI'; btn.disabled = false; }
+    showToast('Scoring request failed', 'error');
+  }
+}
+
+async function scoreAll() {
+  const btn = document.getElementById('score-all-btn');
+  const txt = document.getElementById('score-all-btn-text');
+  btn.disabled = true; txt.textContent = 'Scoring…';
+  try {
+    const resp = await fetch('/api/score-all', { method: 'POST' });
+    const data = await resp.json();
+    if (data.success) {
+      if (data.queued === 0) {
+        showToast('All listings already scored.', 'info');
+        btn.disabled = false; txt.textContent = 'Score All';
+      } else {
+        showToast(`Scoring ${data.queued} listing(s)… reloading in ~${Math.ceil(data.queued * 1.5)}s`, 'success', 10000);
+        setTimeout(() => window.location.reload(), data.queued * 1500 + 3000);
+      }
+    } else {
+      const msg = data.error || 'Unknown error';
+      showToast(msg.includes('API_KEY') ? 'Add ANTHROPIC_API_KEY to .env to enable AI scoring' : msg, 'error');
+      btn.disabled = false; txt.textContent = 'Score All';
+    }
+  } catch (e) {
+    showToast('Score-all request failed', 'error');
+    btn.disabled = false; txt.textContent = 'Score All';
+  }
+}
+
+async function enrichAll() {
+  const btn = document.getElementById('enrich-btn');
+  const txt = document.getElementById('enrich-btn-text');
+  btn.disabled = true; txt.textContent = 'Enriching…';
+  try {
+    const resp = await fetch('/api/enrich-all', { method: 'POST' });
+    const data = await resp.json();
+    if (data.success) {
+      if (data.queued === 0) {
+        showToast('All listings already enriched.', 'info');
+        btn.disabled = false; txt.textContent = 'Enrich';
+      } else {
+        showToast(`Enriching ${data.queued} listing(s)… reloading shortly.`, 'success', 8000);
+        setTimeout(() => window.location.reload(), 6000);
+      }
+    } else {
+      showToast('Enrichment failed: ' + (data.error || 'Unknown error'), 'error');
+      btn.disabled = false; txt.textContent = 'Enrich';
+    }
+  } catch (e) {
+    showToast('Enrichment request failed', 'error');
+    btn.disabled = false; txt.textContent = 'Enrich';
+  }
+}
+
+/* =====================================================================
+   10. INIT
    ===================================================================== */
 // Keyboard navigation for lightbox
 document.addEventListener("keydown", e => {
