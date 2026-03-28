@@ -19,8 +19,10 @@ def get_listings():
     min_rooms = request.args.get("min_rooms", type=int)
     max_rooms = request.args.get("max_rooms", type=int)
     district = request.args.get("district", "").strip()
-    saved_only = request.args.get("saved_only", "").lower() in ("1", "true", "yes")
-    applied_only = request.args.get("applied_only", "").lower() in ("1", "true", "yes")
+    saved_only = request.args.get(
+        "saved_only", "").lower() in ("1", "true", "yes")
+    applied_only = request.args.get(
+        "applied_only", "").lower() in ("1", "true", "yes")
     sort = request.args.get("sort", "newest")
 
     if min_price is not None:
@@ -89,7 +91,8 @@ def enrich_listing(listing_id):
     listing = Listing.query.get_or_404(listing_id)
     try:
         from services.enrichment import enrich_listing_sync
-        summary = enrich_listing_sync(current_app._get_current_object(), listing_id)
+        summary = enrich_listing_sync(
+            current_app._get_current_object(), listing_id)
         listing = Listing.query.get(listing_id)
         return jsonify({
             "success": True,
@@ -130,7 +133,8 @@ def score_listing(listing_id):
     Listing.query.get_or_404(listing_id)
     try:
         from services.ai_scorer import score_listing_sync
-        result = score_listing_sync(current_app._get_current_object(), listing_id)
+        result = score_listing_sync(
+            current_app._get_current_object(), listing_id)
         listing = Listing.query.get(listing_id)
         return jsonify({**result, "listing": listing.to_dict()})
     except Exception as e:
@@ -147,7 +151,8 @@ def score_all_listings():
 
     try:
         from services.ai_scorer import score_all_async
-        unscored_count = Listing.query.filter(Listing.ai_score.is_(None)).count()
+        unscored_count = Listing.query.filter(
+            Listing.ai_score.is_(None)).count()
         if unscored_count == 0:
             return jsonify({"success": True, "message": "All listings already scored.", "queued": 0})
         score_all_async(current_app._get_current_object())
@@ -191,7 +196,8 @@ def recommend_districts():
                 f"- Must have dishwasher: {settings.must_have_dishwasher}",
                 f"- Already preferred: {', '.join(settings.preferred_districts or []) or 'None specified'}",
             ]
-        settings_text = "\n".join(settings_lines) if settings_lines else "No preferences set."
+        settings_text = "\n".join(
+            settings_lines) if settings_lines else "No preferences set."
 
         districts_text = "\n".join([
             f"- {d['name']}: {d['description']} "
@@ -251,7 +257,8 @@ def export_csv():
     import io
     from flask import Response
 
-    saved_only = request.args.get("saved_only", "").lower() in ("1", "true", "yes")
+    saved_only = request.args.get(
+        "saved_only", "").lower() in ("1", "true", "yes")
     query = Listing.query
     if saved_only:
         query = query.filter(Listing.is_saved == True)  # noqa: E712
@@ -288,6 +295,57 @@ def export_csv():
         mimetype="text/csv",
         headers={"Content-Disposition": "attachment; filename=listings.csv"},
     )
+
+
+@api_bp.route("/test-google-maps", methods=["GET"])
+def test_google_maps():
+    """Quick diagnostic: test that GOOGLE_MAPS_API_KEY works for both Geocoding and Directions."""
+    from config import GOOGLE_MAPS_API_KEY
+    if not GOOGLE_MAPS_API_KEY:
+        return jsonify({"key_set": False, "error": "GOOGLE_MAPS_API_KEY is not set in .env"})
+
+    import requests as _req
+    results = {"key_set": True, "key_prefix": GOOGLE_MAPS_API_KEY[:8] + "…"}
+
+    # Test 1: Geocoding API
+    try:
+        r = _req.get(
+            "https://maps.googleapis.com/maps/api/geocode/json",
+            params={"address": "Stockholm, Sweden",
+                    "key": GOOGLE_MAPS_API_KEY},
+            timeout=10,
+        )
+        d = r.json()
+        results["geocoding"] = {"status": d.get(
+            "status"), "ok": d.get("status") == "OK"}
+    except Exception as e:
+        results["geocoding"] = {"status": "ERROR",
+                                "ok": False, "detail": str(e)}
+
+    # Test 2: Directions API
+    try:
+        r = _req.get(
+            "https://maps.googleapis.com/maps/api/directions/json",
+            params={
+                "origin": "59.3293,18.0686",
+                "destination": "59.3340,18.0560",
+                "mode": "transit",
+                "key": GOOGLE_MAPS_API_KEY,
+            },
+            timeout=10,
+        )
+        d = r.json()
+        results["directions"] = {"status": d.get(
+            "status"), "ok": d.get("status") in ("OK", "ZERO_RESULTS")}
+        if d.get("error_message"):
+            results["directions"]["detail"] = d["error_message"]
+    except Exception as e:
+        results["directions"] = {
+            "status": "ERROR", "ok": False, "detail": str(e)}
+
+    results["all_ok"] = all(
+        v.get("ok") for k, v in results.items() if isinstance(v, dict) and "ok" in v)
+    return jsonify(results)
 
 
 @api_bp.route("/transit-route/<int:listing_id>", methods=["GET"])
@@ -345,10 +403,13 @@ def transit_route(listing_id):
             if mode == "TRANSIT":
                 td = step.get("transit_details", {})
                 line = td.get("line", {})
-                entry["line_name"] = line.get("short_name") or line.get("name", "")
+                entry["line_name"] = line.get(
+                    "short_name") or line.get("name", "")
                 entry["vehicle"] = line.get("vehicle", {}).get("type", "BUS")
-                entry["departure_stop"] = td.get("departure_stop", {}).get("name", "")
-                entry["arrival_stop"] = td.get("arrival_stop", {}).get("name", "")
+                entry["departure_stop"] = td.get(
+                    "departure_stop", {}).get("name", "")
+                entry["arrival_stop"] = td.get(
+                    "arrival_stop", {}).get("name", "")
             steps.append(entry)
 
         total_min = round(leg["duration"]["value"] / 60)
