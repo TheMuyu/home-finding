@@ -1,4 +1,4 @@
 /**
- * Filters — Session 5 placeholder.
- * Full implementation coming in Session 5 (Split View UI).
+ * filters.js — stub.
+ * All filter logic lives in app.js (Session 5).
  */

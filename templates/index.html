@@ -5,38 +5,35 @@
 {% block content %}
 <div class="flex h-[calc(100vh-3.5rem)] overflow-hidden">
 
-  <!-- Left panel: Listings -->
+  <!-- ═══════════════════════════════════════════════════════════════════
+       LEFT PANEL: Listings + Filters
+       ═══════════════════════════════════════════════════════════════════ -->
   <div class="w-full lg:w-[45%] flex flex-col overflow-hidden border-r border-gray-200 dark:border-gray-700">
 
     <!-- Panel header -->
-    <div class="flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+    <div class="flex items-center justify-between px-4 py-2.5 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
       <h1 class="text-base font-semibold text-gray-900 dark:text-white">
         Listings
-        {% if listings %}
-        <span class="ml-1.5 text-sm font-normal text-gray-500 dark:text-gray-400">({{ listings|length }})</span>
-        {% endif %}
+        <span id="listings-count" class="ml-1.5 text-sm font-normal text-gray-500 dark:text-gray-400">
+          ({{ listings|length }})
+        </span>
       </h1>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1.5">
         {% if listings %}
-        <button
-          onclick="clearSeedData()"
-          class="text-xs px-3 py-1.5 rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-          Clear Seed Data
+        <button onclick="clearSeedData()"
+          class="text-xs px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          Clear Seed
         </button>
         {% endif %}
-        <button
-          id="seed-btn"
-          onclick="seedData()"
-          class="text-xs px-3 py-1.5 rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1">
+        <button id="seed-btn" onclick="seedData()"
+          class="text-xs px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1">
           <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
           </svg>
           Seed
         </button>
-        <button
-          id="score-all-btn"
-          onclick="scoreAll()"
-          class="text-xs px-3 py-1.5 rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1.5"
+        <button id="score-all-btn" onclick="scoreAll()"
+          class="text-xs px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1"
           title="Score all unscored listings with Claude AI">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -44,10 +41,8 @@
           </svg>
           <span id="score-all-btn-text">Score All</span>
         </button>
-        <button
-          id="enrich-btn"
-          onclick="enrichAll()"
-          class="text-xs px-3 py-1.5 rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1.5"
+        <button id="enrich-btn" onclick="enrichAll()"
+          class="text-xs px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1"
           title="Geocode addresses, calculate commute times, and fetch nearby POIs">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -56,10 +51,8 @@
           </svg>
           <span id="enrich-btn-text">Enrich</span>
         </button>
-        <button
-          id="scrape-btn"
-          onclick="scrapeQasa()"
-          class="text-xs px-3 py-1.5 rounded bg-brand-600 hover:bg-brand-700 text-white font-medium transition-colors flex items-center gap-1.5">
+        <button id="scrape-btn" onclick="scrapeQasa()"
+          class="text-xs px-2.5 py-1.5 rounded bg-brand-600 hover:bg-brand-700 text-white font-medium transition-colors flex items-center gap-1">
           <svg id="scrape-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
@@ -68,159 +61,549 @@
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
           </svg>
-          <span id="scrape-btn-text">Refresh Listings</span>
+          <span id="scrape-btn-text">Refresh</span>
         </button>
       </div>
     </div>
 
-    <!-- Listings list -->
+    <!-- ── Filter Bar ──────────────────────────────────────────────────── -->
+    {% if listings %}
+    <div class="flex-shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+
+      <!-- Quick filter row -->
+      <div class="flex items-center gap-2 px-4 py-2 flex-wrap">
+        <select id="filter-sort" onchange="onFilterChange()"
+          class="text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-500 cursor-pointer">
+          <option value="newest">Newest</option>
+          <option value="score">AI Score</option>
+          <option value="price_asc">Price ↑</option>
+          <option value="price_desc">Price ↓</option>
+          <option value="commute">Commute</option>
+        </select>
+
+        <label class="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+          <input type="checkbox" id="filter-saved" onchange="onFilterChange()"
+            class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+          Saved
+        </label>
+
+        <label class="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+          <input type="checkbox" id="filter-applied" onchange="onFilterChange()"
+            class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+          Applied
+        </label>
+
+        <button onclick="toggleFilterPanel()" id="filter-toggle-btn"
+          class="ml-auto text-xs px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M3 4h18M7 8h10M11 12h2"/>
+          </svg>
+          Filters
+          <span id="filter-count-badge"
+            class="hidden text-[10px] bg-brand-600 text-white rounded-full w-4 h-4 flex items-center justify-center font-semibold">
+            0
+          </span>
+        </button>
+      </div>
+
+      <!-- Advanced filter panel (collapsible) -->
+      <div id="filter-panel" class="hidden border-t border-gray-100 dark:border-gray-700/60 px-4 py-3 space-y-3">
+        <!-- Price -->
+        <div>
+          <label class="text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1.5">Price (SEK/mo)</label>
+          <div class="flex items-center gap-2">
+            <input type="number" id="filter-price-min" placeholder="Min" oninput="onFilterChange()"
+              class="w-24 text-xs rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-500">
+            <span class="text-xs text-gray-400">–</span>
+            <input type="number" id="filter-price-max" placeholder="Max" oninput="onFilterChange()"
+              class="w-24 text-xs rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-500">
+          </div>
+        </div>
+
+        <!-- Rooms -->
+        <div>
+          <label class="text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1.5">Rooms</label>
+          <div class="flex gap-1" id="room-filter-btns">
+            {% for r in [1, 2, 3, 4] %}
+            <button onclick="toggleRoomFilter({{ r }})" data-room="{{ r }}"
+              class="room-filter-btn text-xs px-2.5 py-1 rounded border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-brand-400 transition-colors">
+              {{ r }}{% if r == 4 %}+{% endif %}
+            </button>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Max commute -->
+        <div>
+          <label class="text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1.5">
+            Max commute: <span id="commute-label" class="text-gray-700 dark:text-gray-300 font-semibold">Any</span>
+          </label>
+          <input type="range" id="filter-commute" min="0" max="90" step="5" value="0"
+            oninput="updateCommuteLabel(this.value)" onchange="onFilterChange()"
+            class="w-full">
+        </div>
+
+        <!-- Districts -->
+        <div>
+          <label class="text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1.5">Districts</label>
+          <div class="flex flex-wrap gap-1" id="district-filter-btns">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Amenities -->
+        <div>
+          <label class="text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1.5">Amenities</label>
+          <div class="flex flex-wrap gap-3">
+            {% for key, label in [('washing_machine', 'Washer'), ('tumble_dryer', 'Dryer'), ('dishwasher', 'Dishwasher'), ('balcony', 'Balcony'), ('elevator', 'Elevator')] %}
+            <label class="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+              <input type="checkbox" data-amenity="{{ key }}" onchange="onFilterChange()"
+                class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+              {{ label }}
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <button onclick="resetFilters()" class="text-xs text-red-500 hover:text-red-600 dark:hover:text-red-400 transition-colors">
+          Reset all filters
+        </button>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ── Listings List ───────────────────────────────────────────────── -->
     <div class="flex-1 overflow-y-auto">
       {% if listings %}
       <div id="listings-list" class="divide-y divide-gray-100 dark:divide-gray-700/50">
+
         {% for listing in listings %}
-        <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer group"
-             data-listing-id="{{ listing.id }}">
-          <div class="flex gap-3">
-            <!-- Placeholder thumbnail -->
-            <div class="w-20 h-16 rounded-lg bg-gray-200 dark:bg-gray-700 flex-shrink-0 flex items-center justify-center overflow-hidden">
-              {% if listing.images %}
-              <img src="{{ listing.images[0] }}" alt="{{ listing.title }}" class="w-full h-full object-cover" />
-              {% else %}
-              <svg class="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                  d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/>
-              </svg>
-              {% endif %}
-            </div>
+        {% set district_info = districts.get(listing.district, {}) %}
+        {% set total_price = (listing.price_sek + listing.service_fee_sek) if listing.service_fee_sek else listing.price_sek %}
 
-            <!-- Info -->
-            <div class="flex-1 min-w-0">
-              <div class="flex items-start justify-between gap-2">
-                <h3 class="text-sm font-semibold text-gray-900 dark:text-white truncate leading-tight">
-                  {{ listing.title }}
-                </h3>
-                <!-- Save toggle -->
-                <button onclick="event.stopPropagation(); toggleSave({{ listing.id }}, this)"
-                  data-saved="{{ listing.is_saved|lower }}"
-                  class="flex-shrink-0 text-gray-300 dark:text-gray-600 hover:text-yellow-400 transition-colors
-                         {% if listing.is_saved %}text-yellow-400{% endif %}">
-                  <svg class="w-4 h-4" fill="{{ 'currentColor' if listing.is_saved else 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
-                  </svg>
-                </button>
-              </div>
+        <!-- Card Wrapper — carries filter data attributes -->
+        <div class="listing-card-wrapper"
+             data-listing-id="{{ listing.id }}"
+             data-price="{{ total_price or 0 }}"
+             data-rooms="{{ listing.rooms or 0 }}"
+             data-commute="{{ listing.commute_minutes or 9999 }}"
+             data-district="{{ listing.district or '' }}"
+             data-saved="{{ 'true' if listing.is_saved else 'false' }}"
+             data-status="{{ listing.application_status or 'not_applied' }}"
+             data-score="{{ listing.ai_score if listing.ai_score is not none else -1 }}"
+             data-amenities="{{ (listing.amenities or []) | join(',') }}">
 
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
-                {{ listing.district }}{% if listing.address %} · {{ listing.address.split(',')[0] }}{% endif %}
-              </p>
-
-              <!-- Home type + furnishing badges -->
-              {% if listing.home_type or listing.furnishing %}
-              <div class="flex items-center gap-1.5 mt-1 flex-wrap">
-                {% if listing.home_type %}
-                <span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 capitalize">
-                  {{ listing.home_type.replace('_', ' ') }}
-                </span>
-                {% endif %}
-                {% if listing.furnishing %}
-                <span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 capitalize">
-                  {{ listing.furnishing.replace('_', ' ') }}
-                </span>
-                {% endif %}
-                {% if listing.is_shared == true %}
-                <span class="text-xs px-1.5 py-0.5 rounded bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">
-                  Shared
-                </span>
-                {% elif listing.is_shared == false %}
-                <span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
-                  Entire home
-                </span>
-                {% endif %}
-              </div>
-              {% endif %}
-
-              <div class="flex items-center gap-2 mt-1.5 flex-wrap">
-                <!-- Price + service fee -->
-                <span class="text-sm font-semibold text-gray-900 dark:text-white">
-                  {% if listing.service_fee_sek %}
-                    {{ "{:,}".format(listing.price_sek + listing.service_fee_sek) }} kr/mo
-                    <span class="text-xs font-normal text-gray-400"
-                          title="Rent {{ '{:,}'.format(listing.price_sek) }} + fee {{ '{:,}'.format(listing.service_fee_sek) }} kr">
-                      (incl. fee)
-                    </span>
-                  {% else %}
-                    {{ "{:,}".format(listing.price_sek) }} kr/mo
-                  {% endif %}
-                </span>
-                <!-- Rooms + size -->
-                <span class="text-xs text-gray-500 dark:text-gray-400">
-                  {{ listing.rooms }} rum{% if listing.size_sqm %} · {{ listing.size_sqm }} m²{% endif %}
-                </span>
-                <!-- Available from -->
-                {% if listing.available_from %}
-                <span class="text-xs text-gray-500 dark:text-gray-400">
-                  · From {{ listing.available_from.strftime("%d %b %Y") }}
-                </span>
-                {% endif %}
-              </div>
-
-              <div class="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                <!-- AI score badge -->
-                {% if listing.ai_score is not none %}
-                <span class="text-xs px-1.5 py-0.5 rounded font-semibold
-                  {% if listing.ai_score >= 70 %}bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300
-                  {% elif listing.ai_score >= 40 %}bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300
-                  {% else %}bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300{% endif %}"
-                  id="score-badge-{{ listing.id }}">
-                  AI {{ listing.ai_score }}
-                </span>
+          <!-- ── Compact Card Header (always visible, clickable) ──────── -->
+          <div class="listing-card-header p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
+               onclick="toggleCard({{ listing.id }})">
+            <div class="flex gap-3">
+              <!-- Thumbnail -->
+              <div class="w-20 h-16 rounded-lg bg-gray-200 dark:bg-gray-700 flex-shrink-0 overflow-hidden flex items-center justify-center">
+                {% if listing.images %}
+                <img src="{{ listing.images[0] }}" alt="{{ listing.title }}" class="w-full h-full object-cover"
+                     onerror="this.parentElement.innerHTML='<svg class=\'w-8 h-8 text-gray-400\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z\'/></svg>'">
                 {% else %}
-                <button onclick="event.stopPropagation(); scoreListing({{ listing.id }}, this)"
-                  id="score-btn-{{ listing.id }}"
-                  class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-purple-100 dark:hover:bg-purple-900/40 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
-                  Score with AI
-                </button>
+                <svg class="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                    d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/>
+                </svg>
                 {% endif %}
+              </div>
 
-                <!-- Commute badge -->
-                {% if listing.commute_minutes %}
-                <span class="text-xs px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
-                  {{ listing.commute_minutes }} min
-                </span>
-                {% endif %}
+              <!-- Info -->
+              <div class="flex-1 min-w-0">
+                <div class="flex items-start justify-between gap-2">
+                  <h3 class="text-sm font-semibold text-gray-900 dark:text-white truncate leading-tight">
+                    {{ listing.title }}
+                  </h3>
+                  <!-- Save toggle -->
+                  <button onclick="event.stopPropagation(); toggleSave({{ listing.id }}, this)"
+                    data-saved="{{ listing.is_saved|lower }}"
+                    class="flex-shrink-0 transition-colors {% if listing.is_saved %}text-yellow-400{% else %}text-gray-300 dark:text-gray-600 hover:text-yellow-400{% endif %}">
+                    <svg class="w-4 h-4" fill="{{ 'currentColor' if listing.is_saved else 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                    </svg>
+                  </button>
+                </div>
 
-                <!-- All amenities -->
-                {% set amenity_labels = {
-                  "balcony": "Balcony", "rooftop_terrace": "Rooftop",
-                  "garden": "Garden", "sauna": "Sauna", "pool": "Pool",
-                  "fridge": "Fridge", "freezer": "Freezer", "microwave": "Microwave",
-                  "oven": "Oven", "stove": "Stove", "dishwasher": "Dishwasher",
-                  "washing_machine": "Washer", "tumble_dryer": "Dryer",
-                  "shower": "Shower", "bathtub": "Bathtub", "toilet": "Toilet",
-                  "elevator": "Elevator", "storage_room": "Storage",
-                  "parking": "Parking", "bike_storage": "Bike storage",
-                  "internet": "Internet", "television": "TV"
-                } %}
-                {% if listing.amenities %}
-                  {% for key in listing.amenities %}
-                  <span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
-                    {{ amenity_labels.get(key, key) }}
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+                  {{ listing.district }}{% if listing.address %} · {{ listing.address.split(',')[0] }}{% endif %}
+                </p>
+
+                <!-- Type badges -->
+                {% if listing.home_type or listing.furnishing or listing.is_shared is not none %}
+                <div class="flex items-center gap-1 mt-1 flex-wrap">
+                  {% if listing.home_type %}
+                  <span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 capitalize">
+                    {{ listing.home_type.replace('_', ' ') }}
                   </span>
+                  {% endif %}
+                  {% if listing.furnishing %}
+                  <span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 capitalize">
+                    {{ listing.furnishing.replace('_', ' ') }}
+                  </span>
+                  {% endif %}
+                  {% if listing.is_shared == true %}
+                  <span class="text-xs px-1.5 py-0.5 rounded bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">Shared</span>
+                  {% elif listing.is_shared == false %}
+                  <span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">Entire home</span>
+                  {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Price + rooms row -->
+                <div class="flex items-center gap-2 mt-1.5 flex-wrap">
+                  <span class="text-sm font-semibold text-gray-900 dark:text-white">
+                    {% if listing.service_fee_sek %}
+                      {{ "{:,}".format(listing.price_sek + listing.service_fee_sek) }} kr/mo
+                      <span class="text-xs font-normal text-gray-400" title="Rent {{ '{:,}'.format(listing.price_sek) }} + fee {{ '{:,}'.format(listing.service_fee_sek) }} kr">(incl. fee)</span>
+                    {% else %}
+                      {{ "{:,}".format(listing.price_sek) }} kr/mo
+                    {% endif %}
+                  </span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">
+                    {{ listing.rooms }} rum{% if listing.size_sqm %} · {{ listing.size_sqm }} m²{% endif %}
+                  </span>
+                  {% if listing.available_from %}
+                  <span class="text-xs text-gray-500 dark:text-gray-400">· From {{ listing.available_from.strftime("%d %b") }}</span>
+                  {% endif %}
+                </div>
+
+                <!-- Badges row -->
+                <div class="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                  <!-- AI score -->
+                  {% if listing.ai_score is not none %}
+                  <span id="score-badge-{{ listing.id }}"
+                    class="text-xs px-1.5 py-0.5 rounded font-semibold
+                      {% if listing.ai_score >= 70 %}bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300
+                      {% elif listing.ai_score >= 40 %}bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300
+                      {% else %}bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300{% endif %}">
+                    AI {{ listing.ai_score }}
+                  </span>
+                  {% else %}
+                  <button onclick="event.stopPropagation(); scoreListing({{ listing.id }}, this)"
+                    id="score-btn-{{ listing.id }}"
+                    class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-purple-100 dark:hover:bg-purple-900/40 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                    Score with AI
+                  </button>
+                  {% endif %}
+
+                  <!-- Commute -->
+                  {% if listing.commute_minutes %}
+                  <span class="text-xs px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
+                    {{ listing.commute_minutes }} min
+                  </span>
+                  {% endif %}
+
+                  <!-- Application status badge (if applied) -->
+                  {% if listing.application_status and listing.application_status != 'not_applied' %}
+                  <span class="text-xs px-1.5 py-0.5 rounded capitalize
+                    {% if listing.application_status == 'accepted' %}bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300
+                    {% elif listing.application_status == 'rejected' %}bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400
+                    {% elif listing.application_status == 'waiting' %}bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300
+                    {% else %}bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300{% endif %}">
+                    {{ listing.application_status.replace('_', ' ') }}
+                  </span>
+                  {% endif %}
+
+                  <!-- Amenity badges -->
+                  {% set amenity_labels = {
+                    'balcony': 'Balcony', 'rooftop_terrace': 'Rooftop', 'garden': 'Garden',
+                    'sauna': 'Sauna', 'pool': 'Pool', 'fridge': 'Fridge', 'freezer': 'Freezer',
+                    'microwave': 'Microwave', 'oven': 'Oven', 'stove': 'Stove',
+                    'dishwasher': 'Dishwasher', 'washing_machine': 'Washer',
+                    'tumble_dryer': 'Dryer', 'shower': 'Shower', 'bathtub': 'Bathtub',
+                    'elevator': 'Elevator', 'storage_room': 'Storage', 'parking': 'Parking',
+                    'bike_storage': 'Bike storage', 'internet': 'Internet', 'television': 'TV'
+                  } %}
+                  {% if listing.amenities %}
+                    {% for key in listing.amenities %}
+                    <span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                      {{ amenity_labels.get(key, key) }}
+                    </span>
+                    {% endfor %}
+                  {% else %}
+                    {% if listing.has_washing_machine %}<span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">Washer</span>{% endif %}
+                    {% if listing.has_dryer %}<span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">Dryer</span>{% endif %}
+                    {% if listing.has_dishwasher %}<span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">Dishwasher</span>{% endif %}
+                  {% endif %}
+                </div>
+              </div><!-- /Info -->
+            </div><!-- /flex gap-3 -->
+          </div><!-- /listing-card-header -->
+
+          <!-- ── Expanded Detail (hidden by default) ─────────────────── -->
+          <div id="detail-{{ listing.id }}" class="listing-card-detail hidden border-t border-gray-100 dark:border-gray-700/50 bg-gray-50 dark:bg-gray-800/30 p-4">
+
+            <!-- Image thumbnails — click to open lightbox -->
+            {% if listing.images %}
+            <div class="mb-4 flex gap-2 flex-wrap">
+              {% for img in listing.images %}
+              <img src="{{ img }}" alt="{{ listing.title }}"
+                class="w-16 h-16 object-cover rounded-lg cursor-pointer flex-shrink-0 hover:opacity-80 hover:ring-2 hover:ring-brand-500 transition-all"
+                onclick="event.stopPropagation(); openLightbox({{ listing.id }}, {{ loop.index0 }})"
+                onerror="this.style.display='none'" />
+              {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Description -->
+            {% if listing.description %}
+            <div class="mb-4">
+              <p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed desc-text" id="desc-{{ listing.id }}"
+                 style="display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;">
+                {{ listing.description }}
+              </p>
+              {% if listing.description|length > 250 %}
+              <button onclick="event.stopPropagation(); toggleDesc({{ listing.id }})"
+                id="desc-btn-{{ listing.id }}"
+                class="text-xs text-brand-600 dark:text-brand-400 mt-1 hover:underline">Show more</button>
+              {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- AI Analysis -->
+            {% if listing.ai_score is not none %}
+            <div class="mb-4 bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-100 dark:border-gray-700">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="text-sm font-semibold text-gray-900 dark:text-white">AI Analysis</span>
+                <span class="text-sm font-bold px-2 py-0.5 rounded
+                  {% if listing.ai_score >= 70 %}bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300
+                  {% elif listing.ai_score >= 40 %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300
+                  {% else %}bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300{% endif %}">
+                  {{ listing.ai_score }}/100
+                </span>
+              </div>
+              {% if listing.ai_comment %}
+              <p class="text-xs text-gray-600 dark:text-gray-300 mb-2 leading-relaxed">{{ listing.ai_comment }}</p>
+              {% endif %}
+              {% if listing.ai_pros %}
+              <div class="flex flex-wrap gap-1 mb-1">
+                {% for pro in listing.ai_pros %}
+                <span class="text-xs px-2 py-0.5 rounded-full bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-700/50">✓ {{ pro }}</span>
+                {% endfor %}
+              </div>
+              {% endif %}
+              {% if listing.ai_cons %}
+              <div class="flex flex-wrap gap-1">
+                {% for con in listing.ai_cons %}
+                <span class="text-xs px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-700/50">✗ {{ con }}</span>
+                {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+            {% else %}
+            <div class="mb-4">
+              <button onclick="event.stopPropagation(); scoreListing({{ listing.id }}, document.getElementById('score-btn-{{ listing.id }}'))"
+                class="text-xs px-3 py-1.5 rounded border border-purple-200 dark:border-purple-700 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors">
+                Score this listing with AI
+              </button>
+            </div>
+            {% endif %}
+
+            <!-- Commute + Stops -->
+            {% if listing.commute_minutes or listing.nearby_stops %}
+            <div class="mb-4 bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-100 dark:border-gray-700">
+              {% if listing.commute_minutes %}
+              <div class="flex items-center gap-3 mb-2">
+                <span class="text-2xl font-bold text-brand-600 dark:text-brand-400">{{ listing.commute_minutes }}<span class="text-sm font-normal ml-0.5">min</span></span>
+                <div class="text-xs text-gray-500 dark:text-gray-400">
+                  {% if listing.commute_details %}
+                    {% set chg = (listing.commute_details or {}).get('changes', 0) %}
+                    {% set lines = (listing.commute_details or {}).get('lines', []) %}
+                    <div>{{ chg }} change{{ 's' if chg != 1 else '' }} to work</div>
+                    {% if lines %}
+                    <div class="flex gap-1 mt-0.5 flex-wrap">
+                      {% for line in lines %}
+                      <span class="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded font-medium">{{ line }}</span>
+                      {% endfor %}
+                    </div>
+                    {% endif %}
+                  {% endif %}
+                </div>
+              </div>
+              <!-- Journey legs -->
+              {% if listing.commute_details and (listing.commute_details or {}).get('legs') %}
+              <div class="space-y-1 mb-2">
+                {% for leg in (listing.commute_details or {}).get('legs', [])[:4] %}
+                <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                  <span class="font-medium text-gray-700 dark:text-gray-300 uppercase text-[10px] bg-gray-100 dark:bg-gray-700 px-1 rounded">{{ leg.get('mode', '') }}</span>
+                  <span class="font-medium">{{ leg.get('line', '') }}</span>
+                  <span class="truncate">{{ leg.get('from', '') }} → {{ leg.get('to', '') }}</span>
+                </div>
+                {% endfor %}
+              </div>
+              {% endif %}
+              {% endif %}
+
+              <!-- Google Maps transit link -->
+              {% if listing.commute_minutes and listing.address %}
+              {% set work_addr = settings_json.get('work_address', '') %}
+              {% if work_addr %}
+              <a href="https://www.google.com/maps/dir/?api=1&origin={{ listing.address | replace(' ', '+') }}&destination={{ work_addr | replace(' ', '+') }}&travelmode=transit"
+                 target="_blank" rel="noopener"
+                 onclick="event.stopPropagation()"
+                 class="inline-flex items-center gap-1 text-xs text-brand-600 dark:text-brand-400 hover:underline mt-1 mb-2">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                </svg>
+                View transit on Google Maps
+              </a>
+              {% endif %}
+              {% endif %}
+
+              <!-- Nearby stops -->
+              {% if listing.nearby_stops %}
+              <div class="{% if listing.commute_minutes %}border-t border-gray-100 dark:border-gray-700/50 pt-2{% endif %}">
+                <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Nearby stops</p>
+                <div class="space-y-0.5">
+                  {% for stop in (listing.nearby_stops or [])[:4] %}
+                  <div class="flex items-center justify-between text-xs">
+                    <span class="text-gray-700 dark:text-gray-300">{{ stop.name }}</span>
+                    <span class="text-gray-400">{{ stop.walk_min }} min walk</span>
+                  </div>
                   {% endfor %}
-                {% else %}
-                  {% if listing.has_washing_machine %}<span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">Washer</span>{% endif %}
-                  {% if listing.has_dryer %}<span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">Dryer</span>{% endif %}
-                  {% if listing.has_dishwasher %}<span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">Dishwasher</span>{% endif %}
+                </div>
+              </div>
+              {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Nearby POIs -->
+            {% if listing.nearby_pois %}
+            {% set pois = listing.nearby_pois %}
+            {% set has_pois = pois.get('supermarkets') or pois.get('parks') or pois.get('gyms') %}
+            {% if has_pois %}
+            <div class="mb-4">
+              <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Nearby</p>
+              <div class="flex flex-wrap gap-3">
+                {% if pois.get('supermarkets') %}
+                <div class="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                  🛒 <span>{{ pois.supermarkets|length }} supermarket{{ 's' if pois.supermarkets|length != 1 else '' }}</span>
+                </div>
+                {% endif %}
+                {% if pois.get('parks') %}
+                <div class="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                  🌳 <span>{{ pois.parks|length }} park{{ 's' if pois.parks|length != 1 else '' }}</span>
+                </div>
+                {% endif %}
+                {% if pois.get('gyms') %}
+                <div class="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                  💪 <span>{{ pois.gyms|length }} gym{{ 's' if pois.gyms|length != 1 else '' }}</span>
+                </div>
                 {% endif %}
               </div>
             </div>
-          </div>
-        </div>
+            {% endif %}
+            {% endif %}
+
+            <!-- District info -->
+            {% if district_info %}
+            <div class="mb-4 bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-100 dark:border-gray-700">
+              <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ listing.district }}</p>
+              {% if district_info.description %}
+              <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">{{ district_info.description }}</p>
+              {% endif %}
+              {% if district_info.safety_note %}
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ district_info.safety_note }}</p>
+              {% endif %}
+              {% if district_info.avg_price_range %}
+              <p class="text-xs text-gray-400 mt-1">Avg rent: {{ district_info.avg_price_range }} SEK/mo</p>
+              {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- House rules + deposit -->
+            {% set rules = listing.house_rules or {} %}
+            {% if rules or listing.deposit_months or listing.electricity_included is not none %}
+            <div class="mb-4 text-xs space-y-0.5 text-gray-600 dark:text-gray-400">
+              {% if rules.get('pets_allowed') is not none %}
+              <div>{{ '✓ Pets allowed' if rules.pets_allowed else '✗ No pets' }}</div>
+              {% endif %}
+              {% if rules.get('smoking_allowed') is not none %}
+              <div>{{ '✓ Smoking allowed' if rules.smoking_allowed else '✗ No smoking' }}</div>
+              {% endif %}
+              {% if rules.get('wheelchair_accessible') %}
+              <div>♿ Wheelchair accessible</div>
+              {% endif %}
+              {% if rules.get('max_tenants') %}
+              <div>👥 Max {{ rules.max_tenants }} tenants</div>
+              {% endif %}
+              {% if listing.deposit_months %}
+              <div>Deposit: {{ listing.deposit_months }} month{{ 's' if listing.deposit_months != 1 else '' }}</div>
+              {% endif %}
+              {% if listing.electricity_included is not none %}
+              <div>Electricity: {{ 'included' if listing.electricity_included else 'not included' }}</div>
+              {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Application status + Notes -->
+            <div class="mb-4 grid grid-cols-2 gap-3" onclick="event.stopPropagation()">
+              <div>
+                <label class="text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1">Application status</label>
+                <select id="status-select-{{ listing.id }}"
+                  onchange="updateStatus({{ listing.id }}, this.value)"
+                  class="w-full text-xs rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-500 cursor-pointer">
+                  {% for s in ['not_applied', 'applied', 'waiting', 'rejected', 'accepted'] %}
+                  <option value="{{ s }}" {% if listing.application_status == s %}selected{% endif %}>
+                    {{ s.replace('_', ' ').title() }}
+                  </option>
+                  {% endfor %}
+                </select>
+                {% if listing.application_date %}
+                <p class="text-xs text-gray-400 mt-1">Applied {{ listing.application_date.strftime('%d %b %Y') }}</p>
+                {% endif %}
+              </div>
+              <div>
+                <label class="text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1">Notes</label>
+                <textarea id="notes-area-{{ listing.id }}"
+                  onblur="saveNotes({{ listing.id }}, this.value)"
+                  placeholder="Your notes…" rows="3"
+                  class="w-full text-xs rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-500 resize-none">{{ listing.notes or '' }}</textarea>
+              </div>
+            </div>
+
+            <!-- Footer: external link + collapse -->
+            <div class="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700/50">
+              {% if listing.url %}
+              <a href="{{ listing.url }}" target="_blank" rel="noopener"
+                onclick="event.stopPropagation()"
+                class="text-xs text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                </svg>
+                View original listing
+              </a>
+              {% else %}
+              <span></span>
+              {% endif %}
+              <button onclick="event.stopPropagation(); collapseCard({{ listing.id }})"
+                class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-1 transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+                </svg>
+                Collapse
+              </button>
+            </div>
+          </div><!-- /listing-card-detail -->
+
+        </div><!-- /listing-card-wrapper -->
         {% endfor %}
+
+      </div><!-- /listings-list -->
+
+      <!-- No results from filters -->
+      <div id="no-filter-results" class="hidden py-12 text-center px-8">
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">No listings match your filters.</p>
+        <button onclick="resetFilters()" class="text-xs text-brand-600 dark:text-brand-400 hover:underline">Reset filters</button>
       </div>
+
       {% else %}
-      <!-- Empty state -->
+      <!-- Empty state (no listings at all) -->
       <div class="flex flex-col items-center justify-center h-full text-center px-8 py-16">
         <div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
           <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -229,11 +612,8 @@
           </svg>
         </div>
         <h2 class="text-base font-semibold text-gray-700 dark:text-gray-300 mb-1">No listings yet</h2>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
-          Seed sample data to explore the app, or add a listing manually.
-        </p>
-        <button
-          onclick="seedData()"
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Seed sample data to explore the app, or add a listing manually.</p>
+        <button onclick="seedData()"
           class="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium transition-colors flex items-center gap-2">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -242,19 +622,45 @@
         </button>
       </div>
       {% endif %}
-    </div>
-  </div>
 
-  <!-- Right panel: Map -->
+    </div><!-- /overflow-y-auto -->
+  </div><!-- /left panel -->
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       RIGHT PANEL: Map
+       ═══════════════════════════════════════════════════════════════════ -->
   <div class="hidden lg:flex flex-col flex-1 relative">
-    <div id="map" class="flex-1 w-full bg-gray-200 dark:bg-gray-700"></div>
+    <div id="map" class="flex-1 w-full"></div>
+    <!-- Map legend -->
+    <div class="absolute bottom-4 left-4 z-[400] bg-white dark:bg-gray-800 rounded-xl shadow-lg px-3 py-2 text-xs space-y-1 border border-gray-200 dark:border-gray-700">
+      <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-green-600 border-2 border-white shadow-sm inline-block"></span> Score ≥70</div>
+      <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-yellow-500 border-2 border-white shadow-sm inline-block"></span> Score 40–69</div>
+      <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-red-600 border-2 border-white shadow-sm inline-block"></span> Score &lt;40</div>
+      <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-sky-500 border-2 border-white shadow-sm inline-block"></span> Not scored</div>
+    </div>
   </div>
 
 </div>
 
+<!-- Lightbox overlay -->
+<div id="lightbox" class="fixed inset-0 z-[2000] hidden items-center justify-center bg-black/90"
+     onclick="closeLightbox()">
+  <button onclick="event.stopPropagation(); lightboxPrev()"
+    class="absolute left-3 top-1/2 -translate-y-1/2 text-white/80 hover:text-white text-5xl leading-none p-3 select-none">&#8249;</button>
+  <img id="lightbox-img" src="" alt=""
+    class="max-w-[88vw] max-h-[88vh] object-contain rounded-lg shadow-2xl"
+    onclick="event.stopPropagation()" />
+  <button onclick="event.stopPropagation(); lightboxNext()"
+    class="absolute right-3 top-1/2 -translate-y-1/2 text-white/80 hover:text-white text-5xl leading-none p-3 select-none">&#8250;</button>
+  <button onclick="closeLightbox()"
+    class="absolute top-4 right-4 text-white/70 hover:text-white text-2xl leading-none p-2">&#10005;</button>
+  <span id="lightbox-counter"
+    class="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/80 text-sm bg-black/50 px-3 py-1 rounded-full"></span>
+</div>
+
 <!-- Toast notification -->
-<div id="toast" class="fixed bottom-4 right-4 z-50 hidden">
-  <div class="px-4 py-3 rounded-lg shadow-lg text-sm font-medium text-white max-w-sm" id="toast-inner"></div>
+<div id="toast" class="fixed bottom-4 right-4 z-[1000] hidden">
+  <div id="toast-inner" class="px-4 py-3 rounded-lg shadow-lg text-sm font-medium text-white max-w-sm"></div>
 </div>
 
 {% endblock %}
@@ -262,19 +668,19 @@
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 <script>
-  // Pass listings data to JS for map markers (var = global scope, accessible as window.LISTINGS_DATA)
-  var LISTINGS_DATA = {{ listings_json | tojson }};
+  var LISTINGS_DATA  = {{ listings_json | tojson }};
+  var SETTINGS_DATA  = {{ settings_json | tojson }};
 
+  /* ── Per-listing inline score/enrich ─────────────────────────────── */
   async function scoreListing(id, btn) {
-    btn.disabled = true;
-    btn.textContent = 'Scoring…';
+    if (!btn) btn = document.getElementById(`score-btn-${id}`);
+    if (btn) { btn.disabled = true; btn.textContent = 'Scoring…'; }
     try {
       const resp = await fetch(`/api/score/${id}`, { method: 'POST' });
       const data = await resp.json();
       if (data.success && data.score != null) {
-        // Replace button with score badge
         const score = data.score;
-        let colorClass = score >= 70
+        const colorClass = score >= 70
           ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
           : score >= 40
           ? 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300'
@@ -283,17 +689,18 @@
         badge.id = `score-badge-${id}`;
         badge.className = `text-xs px-1.5 py-0.5 rounded font-semibold ${colorClass}`;
         badge.textContent = `AI ${score}`;
-        btn.replaceWith(badge);
+        if (btn) btn.replaceWith(badge);
+        // Update data attribute for filter matching
+        const wrapper = document.querySelector(`[data-listing-id="${id}"]`);
+        if (wrapper) wrapper.dataset.score = score;
         showToast(`Scored: ${score}/100`, 'success');
       } else {
         const msg = data.error || 'Scoring failed';
-        btn.textContent = 'Score failed';
-        btn.disabled = false;
+        if (btn) { btn.textContent = 'Retry score'; btn.disabled = false; }
         showToast(msg.includes('API_KEY') ? 'Add ANTHROPIC_API_KEY to .env to enable AI scoring' : msg, 'error');
       }
     } catch (e) {
-      btn.textContent = 'Score with AI';
-      btn.disabled = false;
+      if (btn) { btn.textContent = 'Score with AI'; btn.disabled = false; }
       showToast('Scoring request failed', 'error');
     }
   }
@@ -301,16 +708,14 @@
   async function scoreAll() {
     const btn = document.getElementById('score-all-btn');
     const txt = document.getElementById('score-all-btn-text');
-    btn.disabled = true;
-    txt.textContent = 'Scoring…';
+    btn.disabled = true; txt.textContent = 'Scoring…';
     try {
       const resp = await fetch('/api/score-all', { method: 'POST' });
       const data = await resp.json();
       if (data.success) {
         if (data.queued === 0) {
           showToast('All listings already scored.', 'info');
-          btn.disabled = false;
-          txt.textContent = 'Score All';
+          btn.disabled = false; txt.textContent = 'Score All';
         } else {
           showToast(`Scoring ${data.queued} listing(s)… reloading in ~${Math.ceil(data.queued * 1.5)}s`, 'success', 10000);
           setTimeout(() => window.location.reload(), data.queued * 1500 + 3000);
@@ -318,43 +723,36 @@
       } else {
         const msg = data.error || 'Unknown error';
         showToast(msg.includes('API_KEY') ? 'Add ANTHROPIC_API_KEY to .env to enable AI scoring' : msg, 'error');
-        btn.disabled = false;
-        txt.textContent = 'Score All';
+        btn.disabled = false; txt.textContent = 'Score All';
       }
     } catch (e) {
       showToast('Score-all request failed', 'error');
-      btn.disabled = false;
-      txt.textContent = 'Score All';
+      btn.disabled = false; txt.textContent = 'Score All';
     }
   }
 
   async function enrichAll() {
     const btn = document.getElementById('enrich-btn');
     const txt = document.getElementById('enrich-btn-text');
-    btn.disabled = true;
-    txt.textContent = 'Enriching…';
+    btn.disabled = true; txt.textContent = 'Enriching…';
     try {
       const resp = await fetch('/api/enrich-all', { method: 'POST' });
       const data = await resp.json();
       if (data.success) {
         if (data.queued === 0) {
           showToast('All listings already enriched.', 'info');
-          btn.disabled = false;
-          txt.textContent = 'Enrich';
+          btn.disabled = false; txt.textContent = 'Enrich';
         } else {
           showToast(`Enriching ${data.queued} listing(s)… reloading shortly.`, 'success', 8000);
-          // Wait for background enrichment then reload
           setTimeout(() => window.location.reload(), 6000);
         }
       } else {
         showToast('Enrichment failed: ' + (data.error || 'Unknown error'), 'error');
-        btn.disabled = false;
-        txt.textContent = 'Enrich';
+        btn.disabled = false; txt.textContent = 'Enrich';
       }
     } catch (e) {
       showToast('Enrichment request failed', 'error');
-      btn.disabled = false;
-      txt.textContent = 'Enrich';
+      btn.disabled = false; txt.textContent = 'Enrich';
     }
   }
 </script>

@@ -20,7 +20,16 @@ VALID_STATUSES = ("not_applied", "applied", "waiting", "rejected", "accepted")
 def index():
     listings = Listing.query.order_by(Listing.created_at.desc()).all()
     listings_json = [l.to_dict() for l in listings]
-    return render_template("index.html", listings=listings, listings_json=listings_json)
+    settings = UserSettings.query.first()
+    settings_json = settings.to_dict() if settings else {}
+    from services.district_advisor import DISTRICTS
+    return render_template(
+        "index.html",
+        listings=listings,
+        listings_json=listings_json,
+        settings_json=settings_json,
+        districts=DISTRICTS,
+    )
 
 
 # ── Single listing JSON ───────────────────────────────────────────────────────
