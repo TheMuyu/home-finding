@@ -63,14 +63,19 @@ class Listing(db.Model):
     has_dishwasher = db.Column(db.Boolean, default=False)
     size_sqm = db.Column(db.Integer, nullable=True)
     available_from = db.Column(db.Date, nullable=True)
-    available_until = db.Column(db.String(50), nullable=True)  # date string or "until_further_notice"
+    # date string or "until_further_notice"
+    available_until = db.Column(db.String(50), nullable=True)
     images = db.Column(db.JSON, default=list)
     # Listing character
-    home_type = db.Column(db.String(30), nullable=True)         # apartment, house, terrace_house, cottage, dorm, other
-    furnishing = db.Column(db.String(30), nullable=True)        # furnished, unfurnished, partially_furnished
-    is_shared = db.Column(db.Boolean, nullable=True)            # True=shared home, False=entire home
+    # apartment, house, terrace_house, cottage, dorm, other
+    home_type = db.Column(db.String(30), nullable=True)
+    # furnished, unfurnished, partially_furnished
+    furnishing = db.Column(db.String(30), nullable=True)
+    # True=shared home, False=entire home
+    is_shared = db.Column(db.Boolean, nullable=True)
     # Rent breakdown
-    service_fee_sek = db.Column(db.Integer, nullable=True)      # Qasa service fee on top of rent
+    # Qasa service fee on top of rent
+    service_fee_sek = db.Column(db.Integer, nullable=True)
     electricity_included = db.Column(db.Boolean, nullable=True)
     deposit_months = db.Column(db.Integer, nullable=True)
     # House rules (JSON: {pets_allowed, smoking_allowed, wheelchair_accessible, max_tenants})
@@ -79,6 +84,7 @@ class Listing(db.Model):
     amenities = db.Column(db.JSON, default=list)
     commute_minutes = db.Column(db.Integer, nullable=True)
     commute_details = db.Column(db.JSON, default=dict)
+    transit_route = db.Column(db.JSON, default=dict)
     nearby_stops = db.Column(db.JSON, default=list)
     nearby_pois = db.Column(db.JSON, default=dict)
     ai_score = db.Column(db.Integer, nullable=True)
@@ -86,11 +92,13 @@ class Listing(db.Model):
     ai_pros = db.Column(db.JSON, default=list)
     ai_cons = db.Column(db.JSON, default=list)
     is_saved = db.Column(db.Boolean, default=False)
-    application_status = db.Column(db.String(20), nullable=True, default="not_applied")
+    application_status = db.Column(
+        db.String(20), nullable=True, default="not_applied")
     application_date = db.Column(db.Date, nullable=True)
     notes = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
         return {

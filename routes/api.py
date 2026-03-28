@@ -348,11 +348,37 @@ def test_google_maps():
     return jsonify(results)
 
 
+def _next_weekday_8am_unix():
+    """Return Unix timestamp for next Mon–Fri at 08:00 Stockholm time (CET/CEST)."""
+    import datetime
+    now_utc = datetime.datetime.utcnow()
+    year = now_utc.year
+    # DST: last Sunday in March → last Sunday in October
+    mar31 = datetime.datetime(year, 3, 31)
+    dst_start = mar31 - datetime.timedelta(days=(mar31.weekday() + 1) % 7)
+    oct31 = datetime.datetime(year, 10, 31)
+    dst_end = oct31 - datetime.timedelta(days=(oct31.weekday() + 1) % 7)
+    utc_offset = 2 if dst_start <= now_utc < dst_end else 1
+
+    sthlm_now = now_utc + datetime.timedelta(hours=utc_offset)
+    for days_ahead in range(7):
+        candidate = sthlm_now + datetime.timedelta(days=days_ahead)
+        if candidate.weekday() < 5:  # Mon–Fri
+            target = candidate.replace(
+                hour=8, minute=0, second=0, microsecond=0)
+            if target > sthlm_now:
+                target_utc = target - datetime.timedelta(hours=utc_offset)
+                epoch = datetime.datetime(1970, 1, 1)
+                return int((target_utc - epoch).total_seconds())
+    return None
+
+
 @api_bp.route("/transit-route/<int:listing_id>", methods=["GET"])
 def transit_route(listing_id):
     """
     Fetch transit route from listing to work address using Google Maps Directions API.
-    Returns per-step encoded polylines, modes, and line info for map rendering.
+    Results are cached in the DB (transit_route column). Pass ?force=1 to refresh.
+    Always uses next weekday 08:00 Stockholm time as departure for consistent results.
     """
     from config import GOOGLE_MAPS_API_KEY
     if not GOOGLE_MAPS_API_KEY:
@@ -367,16 +393,29 @@ def transit_route(listing_id):
     if not settings or not settings.work_lat or not settings.work_lng:
         return jsonify({"success": False, "error": "Work address not set in Settings"}), 400
 
+    # Return cached route unless force-refresh requested
+    force = request.args.get("force", "").lower() in ("1", "true")
+    if listing.transit_route and not force:
+        cached = listing.transit_route
+        cached["work_lat"] = settings.work_lat
+        cached["work_lng"] = settings.work_lng
+        return jsonify({"success": True, **cached})
+
     import requests as _requests
     try:
+        params = {
+            "origin": f"{listing.lat},{listing.lng}",
+            "destination": f"{settings.work_lat},{settings.work_lng}",
+            "mode": "transit",
+            "key": GOOGLE_MAPS_API_KEY,
+        }
+        dep_time = _next_weekday_8am_unix()
+        if dep_time:
+            params["departure_time"] = dep_time
+
         resp = _requests.get(
             "https://maps.googleapis.com/maps/api/directions/json",
-            params={
-                "origin": f"{listing.lat},{listing.lng}",
-                "destination": f"{settings.work_lat},{settings.work_lng}",
-                "mode": "transit",
-                "key": GOOGLE_MAPS_API_KEY,
-            },
+            params=params,
             timeout=10,
         )
         resp.raise_for_status()
@@ -413,14 +452,21 @@ def transit_route(listing_id):
             steps.append(entry)
 
         total_min = round(leg["duration"]["value"] / 60)
-        return jsonify({
-            "success": True,
+        result = {
             "steps": steps,
             "total_minutes": total_min,
             "summary": route.get("summary", ""),
-            "work_lat": settings.work_lat,
-            "work_lng": settings.work_lng,
-        })
+        }
+
+        # Cache in DB; also backfill commute_minutes if missing
+        listing.transit_route = result
+        if not listing.commute_minutes:
+            listing.commute_minutes = total_min
+        db.session.commit()
+
+        result["work_lat"] = settings.work_lat
+        result["work_lng"] = settings.work_lng
+        return jsonify({"success": True, **result})
 
     except Exception as e:
         logger.error(f"Transit route failed for listing {listing_id}: {e}")

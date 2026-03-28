@@ -5,7 +5,8 @@ Usage:  python db_migrate.py
 import os
 import sqlite3
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "database", "apartment_finder.db")
+DB_PATH = os.path.join(os.path.dirname(__file__),
+                       "database", "apartment_finder.db")
 
 NEW_COLUMNS = [
     ("listings", "amenities",           "TEXT DEFAULT '[]'"),
@@ -18,6 +19,7 @@ NEW_COLUMNS = [
     ("listings", "electricity_included", "BOOLEAN"),
     ("listings", "deposit_months",       "INTEGER"),
     ("listings", "house_rules",          "TEXT DEFAULT '{}'"),
+    ("listings", "transit_route",        "TEXT DEFAULT '{}'"),
 ]
 
 conn = sqlite3.connect(DB_PATH)

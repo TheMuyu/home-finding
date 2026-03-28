@@ -155,10 +155,34 @@ def get_nearby_stops(lat: float, lng: float, max_results: int = 5) -> list[dict]
     return stops
 
 
+def _next_weekday_8am_unix() -> int | None:
+    """Return Unix timestamp for next Mon–Fri at 08:00 Stockholm time (CET/CEST)."""
+    import datetime
+    now_utc = datetime.datetime.utcnow()
+    year = now_utc.year
+    mar31 = datetime.datetime(year, 3, 31)
+    dst_start = mar31 - datetime.timedelta(days=(mar31.weekday() + 1) % 7)
+    oct31 = datetime.datetime(year, 10, 31)
+    dst_end = oct31 - datetime.timedelta(days=(oct31.weekday() + 1) % 7)
+    utc_offset = 2 if dst_start <= now_utc < dst_end else 1
+    sthlm_now = now_utc + datetime.timedelta(hours=utc_offset)
+    for days_ahead in range(7):
+        candidate = sthlm_now + datetime.timedelta(days=days_ahead)
+        if candidate.weekday() < 5:
+            target = candidate.replace(
+                hour=8, minute=0, second=0, microsecond=0)
+            if target > sthlm_now:
+                target_utc = target - datetime.timedelta(hours=utc_offset)
+                epoch = datetime.datetime(1970, 1, 1)
+                return int((target_utc - epoch).total_seconds())
+    return None
+
+
 def get_commute_google(from_lat: float, from_lng: float, to_lat: float, to_lng: float) -> dict | None:
     """
     Calculate commute using Google Maps Directions API (transit mode).
     Used as fallback when TRAFIKLAB_RESROBOT_KEY is not set.
+    Always uses next weekday 08:00 Stockholm time for consistent morning results.
 
     Returns same shape as get_commute():
         {"minutes": int, "changes": int, "lines": [...], "legs": [...]}
@@ -168,15 +192,20 @@ def get_commute_google(from_lat: float, from_lng: float, to_lat: float, to_lng: 
     if not GOOGLE_MAPS_API_KEY:
         return None
 
+    params = {
+        "origin": f"{from_lat},{from_lng}",
+        "destination": f"{to_lat},{to_lng}",
+        "mode": "transit",
+        "key": GOOGLE_MAPS_API_KEY,
+    }
+    dep_time = _next_weekday_8am_unix()
+    if dep_time:
+        params["departure_time"] = dep_time
+
     try:
         resp = requests.get(
             "https://maps.googleapis.com/maps/api/directions/json",
-            params={
-                "origin": f"{from_lat},{from_lng}",
-                "destination": f"{to_lat},{to_lng}",
-                "mode": "transit",
-                "key": GOOGLE_MAPS_API_KEY,
-            },
+            params=params,
             timeout=15,
         )
         resp.raise_for_status()

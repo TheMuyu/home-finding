@@ -312,9 +312,12 @@
                     {% if listing.service_fee_sek %}
                     {{ "{:,}".format(listing.price_sek + listing.service_fee_sek) }} kr/mo
                     <span class="text-xs font-normal text-gray-400"
-                      title="Rent {{ '{:,}'.format(listing.price_sek) }} + fee {{ '{:,}'.format(listing.service_fee_sek) }} kr">(incl. fee{% if listing.deposit_months %} · {{ listing.deposit_months }}mo deposit{% endif %})</span>
+                      title="Rent {{ '{:,}'.format(listing.price_sek) }} + fee {{ '{:,}'.format(listing.service_fee_sek) }} kr">(incl.
+                      fee{% if listing.deposit_months %} · {{ listing.deposit_months }}mo deposit{% endif %})</span>
                     {% else %}
-                    {{ "{:,}".format(listing.price_sek) }} kr/mo{% if listing.deposit_months %}<span class="text-xs font-normal text-gray-400 ml-1">({{ listing.deposit_months }}mo deposit)</span>{% endif %}
+                    {{ "{:,}".format(listing.price_sek) }} kr/mo{% if listing.deposit_months %}<span
+                      class="text-xs font-normal text-gray-400 ml-1">({{ listing.deposit_months }}mo deposit)</span>{%
+                    endif %}
                     {% endif %}
                   </span>
                   <span class="text-xs text-gray-500 dark:text-gray-400">
@@ -395,10 +398,13 @@
               {% if listing.images|length > 4 %}
               <button onclick="event.stopPropagation(); scrollThumb({{ listing.id }}, -1)"
                 class="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-6 h-6 rounded-full bg-white dark:bg-gray-700 shadow border border-gray-200 dark:border-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors opacity-0 group-hover:opacity-100">
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
               </button>
               {% endif %}
-              <div id="thumbrow-{{ listing.id }}" class="flex gap-2 overflow-x-auto scrollbar-hide {% if listing.images|length > 4 %}px-7{% endif %}">
+              <div id="thumbrow-{{ listing.id }}"
+                class="flex gap-2 overflow-x-auto scrollbar-hide {% if listing.images|length > 4 %}px-7{% endif %}">
                 {% for img in listing.images %}
                 <img src="{{ img }}" alt="{{ listing.title }}"
                   class="w-20 h-16 object-cover rounded-lg cursor-pointer flex-shrink-0 hover:opacity-80 hover:ring-2 hover:ring-brand-500 transition-all"
@@ -409,7 +415,9 @@
               {% if listing.images|length > 4 %}
               <button onclick="event.stopPropagation(); scrollThumb({{ listing.id }}, 1)"
                 class="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-6 h-6 rounded-full bg-white dark:bg-gray-700 shadow border border-gray-200 dark:border-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors opacity-0 group-hover:opacity-100">
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
               </button>
               {% endif %}
             </div>
@@ -467,16 +475,19 @@
 
             <!-- Commute + Stops -->
             <div class="mb-4 bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-100 dark:border-gray-700">
-              {% if listing.commute_minutes or listing.nearby_stops %}
-              {% if listing.commute_minutes %}
+              {% set tr = listing.transit_route or {} %}
+              {% set tr_steps = tr.get('steps', []) %}
+              {% set effective_minutes = listing.commute_minutes or tr.get('total_minutes') %}
+              {% if effective_minutes or listing.nearby_stops or tr_steps %}
+              {% if effective_minutes %}
               <div class="flex items-center gap-3 mb-2">
-                <span class="text-2xl font-bold text-brand-600 dark:text-brand-400">{{ listing.commute_minutes }}<span
+                <span class="text-2xl font-bold text-brand-600 dark:text-brand-400">{{ effective_minutes }}<span
                     class="text-sm font-normal ml-0.5">min</span></span>
                 <div class="text-xs text-gray-500 dark:text-gray-400">
                   {% if listing.commute_details %}
                   {% set chg = (listing.commute_details or {}).get('changes', 0) %}
                   {% set lines = (listing.commute_details or {}).get('lines', []) %}
-                  <div>{{ chg }} change{{ 's' if chg != 1 else '' }} to work</div>
+                  <div>{{ 'Direct' if chg == 0 else (chg ~ ' transfer' ~ ('s' if chg != 1 else '')) }} to work</div>
                   {% if lines %}
                   <div class="flex gap-1 mt-0.5 flex-wrap">
                     {% for line in lines %}
@@ -489,8 +500,42 @@
                   {% endif %}
                 </div>
               </div>
-              <!-- Journey legs -->
-              {% if listing.commute_details and (listing.commute_details or {}).get('legs') %}
+              {% endif %}
+              <!-- Journey steps — prefer transit_route (richer data) over commute_details legs -->
+              {% if tr_steps %}
+              <div class="space-y-1.5 mb-2">
+                {% for step in tr_steps %}
+                {% if step.get('mode') == 'TRANSIT' %}
+                {% set v = step.get('vehicle', '')|upper %}
+                <div class="flex items-center gap-1.5 text-xs">
+                  {% if v in ('SUBWAY', 'METRO_RAIL', 'HEAVY_RAIL') %}
+                  <span
+                    class="flex-shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">Metro</span>
+                  {% elif v in ('TRAM', 'LIGHT_RAIL') %}
+                  <span
+                    class="flex-shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300">Tram</span>
+                  {% elif v == 'FERRY' %}
+                  <span
+                    class="flex-shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300">Ferry</span>
+                  {% else %}
+                  <span
+                    class="flex-shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300">Bus</span>
+                  {% endif %}
+                  {% if step.get('line_name') %}
+                  <span class="flex-shrink-0 font-bold text-gray-800 dark:text-gray-200">{{ step.line_name }}</span>
+                  {% endif %}
+                  <span class="text-gray-500 dark:text-gray-400 flex-1 min-w-0 truncate">{{ step.get('departure_stop',
+                    '') }} → {{ step.get('arrival_stop', '') }}</span>
+                  <span class="flex-shrink-0 text-gray-400">{{ step.get('duration_min', '') }} min</span>
+                </div>
+                {% elif step.get('mode') == 'WALKING' and step.get('duration_min', 0) >= 2 %}
+                <div class="text-xs text-gray-400 dark:text-gray-500">
+                  🚶 Walk {{ step.get('duration_min') }} min
+                </div>
+                {% endif %}
+                {% endfor %}
+              </div>
+              {% elif listing.commute_details and (listing.commute_details or {}).get('legs') %}
               <div class="space-y-1 mb-2">
                 {% for leg in (listing.commute_details or {}).get('legs', [])[:4] %}
                 <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
@@ -502,7 +547,6 @@
                 </div>
                 {% endfor %}
               </div>
-              {% endif %}
               {% endif %}
 
               <!-- Google Maps transit link -->
@@ -545,7 +589,7 @@
                 </svg>
                 <span>No transit data yet —
                   {% if not settings_json.get('work_address') %}
-                    set a work address in Settings first, then
+                  set a work address in Settings first, then
                   {% endif %}
                   use Re-enrich below to fetch commute &amp; nearby stops.
                 </span>
@@ -692,7 +736,8 @@
           </svg>
         </div>
         <h2 class="text-base font-semibold text-gray-700 dark:text-gray-300 mb-1">No listings yet</h2>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Scrape Qasa listings or add one manually to get started.</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Scrape Qasa listings or add one manually to get
+          started.</p>
         <a href="{{ url_for('listings.add_listing_page') }}"
           class="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium transition-colors flex items-center gap-2">
           + Add Listing
@@ -710,8 +755,22 @@
     <div id="map" class="flex-1 w-full"></div>
     <!-- Map legend -->
     <div
-      class="absolute bottom-4 left-4 z-[400] bg-white dark:bg-gray-800 rounded-xl shadow-lg px-3 py-2 text-xs space-y-1 border border-gray-200 dark:border-gray-700">
-      <div class="text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wide text-[10px] pb-0.5">Listings</div>
+      class="absolute bottom-4 left-4 z-[400] bg-white dark:bg-gray-800 rounded-xl shadow-lg px-3 py-2 text-xs border border-gray-200 dark:border-gray-700 space-y-1">
+      <!-- ROUTE section — shown when a route is active -->
+      <div id="route-legend" class="hidden pb-1 mb-0.5 border-b border-gray-100 dark:border-gray-700 space-y-1">
+        <div class="text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wide text-[10px] pb-0.5">Route</div>
+        <div class="flex items-center gap-1.5"><span class="inline-block w-5 h-0.5 bg-blue-600 rounded"></span> Subway /
+          Rail</div>
+        <div class="flex items-center gap-1.5"><span class="inline-block w-5 h-0.5 bg-purple-600 rounded"></span> Tram
+        </div>
+        <div class="flex items-center gap-1.5"><span class="inline-block w-5 h-0.5 bg-green-600 rounded"></span> Bus
+        </div>
+        <div class="flex items-center gap-1.5"><span
+            class="inline-block w-5 h-0.5 border-t-2 border-dashed border-gray-400"></span> Walk</div>
+      </div>
+      <!-- LISTINGS section — always visible -->
+      <div class="text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wide text-[10px] pb-0.5">Listings
+      </div>
       <div class="flex items-center gap-1.5"><span
           class="w-3 h-3 rounded-full bg-green-600 border-2 border-white shadow-sm inline-block"></span> Score ≥70</div>
       <div class="flex items-center gap-1.5"><span
@@ -722,13 +781,6 @@
       </div>
       <div class="flex items-center gap-1.5"><span
           class="w-3 h-3 rounded-full bg-sky-500 border-2 border-white shadow-sm inline-block"></span> Not scored</div>
-      <div id="route-legend" class="hidden pt-1 border-t border-gray-100 dark:border-gray-700 space-y-1">
-        <div class="text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wide text-[10px] pb-0.5">Route</div>
-        <div class="flex items-center gap-1.5"><span class="inline-block w-5 h-0.5 bg-blue-600 rounded"></span> Subway / Rail</div>
-        <div class="flex items-center gap-1.5"><span class="inline-block w-5 h-0.5 bg-purple-600 rounded"></span> Tram</div>
-        <div class="flex items-center gap-1.5"><span class="inline-block w-5 h-0.5 bg-green-600 rounded"></span> Bus</div>
-        <div class="flex items-center gap-1.5"><span class="inline-block w-5 h-0.5 border-t-2 border-dashed border-gray-400 w-5"></span> Walk</div>
-      </div>
     </div>
   </div>
 

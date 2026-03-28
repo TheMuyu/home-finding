@@ -924,12 +924,16 @@ function buildPopup(listing) {
   const score = listing.ai_score != null
     ? `<span style="color:${scoreColor(listing.ai_score)};font-weight:600;">AI ${listing.ai_score}</span>`
     : `<span style="color:#0ea5e9;">Not scored</span>`;
+  const commute = listing.commute_minutes
+    ? `<div style="margin-top:4px;color:#2563eb;font-size:12px;">🚌 ${listing.commute_minutes} min to work</div>`
+    : "";
   return `
     <div style="font-size:13px;min-width:160px;">
       <div style="font-weight:600;margin-bottom:4px;">${listing.title || "Listing"}</div>
       <div style="color:#6b7280;margin-bottom:4px;">${listing.district || ""}</div>
       <div>${price} &middot; ${rooms}</div>
       <div style="margin-top:4px;">${score}</div>
+      ${commute}
     </div>`;
 }
 
