@@ -283,7 +283,7 @@ def export_csv():
             lst.commute_minutes if lst.commute_minutes is not None else "",
             lst.application_status or "",
             lst.application_date.isoformat() if lst.application_date else "",
-            lst.available_from.isoformat() if lst.available_from else "",
+            lst.available_from if lst.available_from else "",
             "Yes" if lst.is_saved else "No",
             lst.notes or "",
             lst.url or "",

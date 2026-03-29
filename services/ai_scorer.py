@@ -19,7 +19,7 @@ from database.models import Listing, UserSettings
 
 logger = logging.getLogger(__name__)
 
-MODEL = "claude-sonnet-4-20250514"
+MODEL = "claude-haiku-4-5-20251001"
 BATCH_SIZE = 5
 BATCH_DELAY = 1.0  # seconds between API calls
 
@@ -50,7 +50,8 @@ def _run_score_all(app) -> None:
                 try:
                     _score_one(listing_id)
                 except Exception as e:
-                    logger.error(f"Scoring failed for listing {listing_id}: {e}")
+                    logger.error(
+                        f"Scoring failed for listing {listing_id}: {e}")
                 # Delay between calls; also between batches
                 if i < len(ids) - 1:
                     time.sleep(BATCH_DELAY)
@@ -83,7 +84,8 @@ def _score_one(listing_id: int) -> dict:
     result = _call_claude(client, prompt)
     if result is None:
         # Retry once
-        logger.warning(f"First scoring attempt failed for listing {listing_id}, retrying…")
+        logger.warning(
+            f"First scoring attempt failed for listing {listing_id}, retrying…")
         time.sleep(1)
         result = _call_claude(client, prompt)
 
@@ -102,7 +104,8 @@ def _score_one(listing_id: int) -> dict:
     # Parsed successfully
     listing.ai_score = result.get("score")
     listing.ai_comment = result.get("summary", "") + (
-        f"\n\n{result.get('district_comment', '')}" if result.get("district_comment") else ""
+        f"\n\n{result.get('district_comment', '')}" if result.get(
+            "district_comment") else ""
     )
     listing.ai_pros = result.get("pros", [])
     listing.ai_cons = result.get("cons", [])
@@ -273,7 +276,7 @@ LISTING DETAILS:
 - Floor: {listing.floor if listing.floor is not None else "Not specified"}
 - Electricity included: {listing.electricity_included if listing.electricity_included is not None else "Unknown"}
 - Amenities: {", ".join(amenities_list) if amenities_list else "None listed"}
-- Available from: {listing.available_from.isoformat() if listing.available_from else "Not specified"}
+- Available from: {listing.available_from if listing.available_from else "Not specified"}
 
 COMMUTE & TRANSIT:
 - Commute to work: {commute_info}

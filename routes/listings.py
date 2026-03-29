@@ -107,7 +107,11 @@ def districts_page():
         d["listing_count"] = district_counts.get(d["name"].lower(), 0)
         d["is_preferred"] = d["name"].lower() in preferred
 
-    return render_template("districts.html", districts=districts, settings=settings_dict)
+    lang = request.args.get("lang", "en")
+    if lang not in ("en", "tr"):
+        lang = "en"
+
+    return render_template("districts.html", districts=districts, settings=settings_dict, lang=lang)
 
 
 # ── Add listing page (GET) ────────────────────────────────────────────────────
