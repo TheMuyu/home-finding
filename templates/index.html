@@ -36,7 +36,7 @@
       </div>
 
       {% else %}
-      <!-- Empty state (no listings at all) -->
+      <!-- Empty state -->
       <div class="flex flex-col items-center justify-center h-full text-center px-8 py-16">
         <div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
           <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -65,7 +65,6 @@
     <!-- Map legend -->
     <div
       class="absolute bottom-4 left-4 z-[400] bg-white dark:bg-gray-800 rounded-xl shadow-lg px-3 py-2 text-xs border border-gray-200 dark:border-gray-700 space-y-1">
-      <!-- ROUTE section — shown when a route is active -->
       <div id="route-legend" class="hidden pb-1 mb-0.5 border-b border-gray-100 dark:border-gray-700 space-y-1">
         <div class="text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wide text-[10px] pb-0.5">Route</div>
         <div class="flex items-center gap-1.5"><span class="inline-block w-5 h-0.5 bg-blue-600 rounded"></span> Subway /
@@ -77,7 +76,6 @@
         <div class="flex items-center gap-1.5"><span
             class="inline-block w-5 h-0.5 border-t-2 border-dashed border-gray-400"></span> Walk</div>
       </div>
-      <!-- Supermarket toggle — always visible -->
       <div class="flex items-center justify-between gap-3">
         <span class="flex items-center gap-1 text-gray-600 dark:text-gray-400">🛒 Supermarkets</span>
         <button id="supermarket-toggle" onclick="toggleSupermarketsOverlay()" role="switch" aria-checked="false"
@@ -117,6 +115,7 @@
   onclick="if(event.target===this) closeDescriptionModal()">
   <div
     class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col border border-gray-200 dark:border-gray-700">
+
     <!-- Header -->
     <div
       class="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
@@ -128,42 +127,54 @@
         </svg>
       </button>
     </div>
-    <!-- Lang toggle -->
-    <div id="desc-modal-lang-toggle"
-      class="hidden flex-shrink-0 flex items-center gap-2 px-5 py-2 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-      <button id="desc-lang-original" onclick="showOriginalDesc()"
-        class="text-xs px-3 py-1 rounded-full font-medium transition-colors bg-gray-900 dark:bg-white text-white dark:text-gray-900">
-        Swedish
+
+    <!-- Language tabs — shown only when at least one translation exists -->
+    <div id="desc-lang-bar"
+      class="hidden flex-shrink-0 flex items-center gap-1.5 px-5 py-2 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+      <button id="desc-tab-swedish" onclick="showLang('swedish')"
+        class="text-xs px-3 py-1 rounded-full font-medium transition-colors">
+        &#127480;&#127466; Swedish
       </button>
-      <button id="desc-lang-english" onclick="showEnglishDesc()"
-        class="text-xs px-3 py-1 rounded-full font-medium transition-colors text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700">
-        English
+      <button id="desc-tab-english" onclick="showLang('english')"
+        class="text-xs px-3 py-1 rounded-full font-medium transition-colors">
+        &#127468;&#127463; English
+      </button>
+      <button id="desc-tab-turkish" onclick="showLang('turkish')"
+        class="text-xs px-3 py-1 rounded-full font-medium transition-colors">
+        &#127481;&#127479; Turkish
       </button>
     </div>
+
     <!-- Body -->
     <div class="flex-1 overflow-y-auto px-5 py-4">
       <p id="desc-modal-text" class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap"></p>
     </div>
+
     <!-- Footer -->
     <div
-      class="flex-shrink-0 px-5 py-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between gap-3">
-      <button id="desc-translate-btn" onclick="translateDescription()"
-        class="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium transition-colors">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+      class="flex-shrink-0 px-5 py-4 border-t border-gray-100 dark:border-gray-700 flex items-center gap-2 flex-wrap">
+      <button id="desc-btn-en" onclick="translateDescription('english')"
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium transition-colors">
+        &#127468;&#127463; <span id="desc-btn-en-text">&#8594; English</span>
+        <svg id="desc-spin-en" class="hidden animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
         </svg>
-        <span id="desc-translate-btn-text">Translate with AI</span>
-        <svg id="desc-translate-spinner" class="hidden animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+      </button>
+      <button id="desc-btn-tr" onclick="translateDescription('turkish')"
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-medium transition-colors">
+        &#127481;&#127479; <span id="desc-btn-tr-text">&#8594; Turkish</span>
+        <svg id="desc-spin-tr" class="hidden animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
         </svg>
       </button>
       <button onclick="closeDescriptionModal()"
-        class="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        class="ml-auto px-4 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
         Close
       </button>
     </div>
+
   </div>
 </div>
 
@@ -176,37 +187,41 @@
   var SETTINGS_DATA = {{ settings_json | tojson }};
 
   // ── Description Modal ──────────────────────────────────────────────────────
-  var _descModalListingId = null;
-  var _descModalOriginal = "";
-  var _descModalEnglish = "";
-  var _descModalShowingEnglish = false;
+  var _descListingId = null;
+  var _descTexts = { swedish: "", english: "", turkish: "" };
+  var _descActiveLang = "swedish";
+
+  var _descLangField = { swedish: "description", english: "description_english", turkish: "description_turkish" };
+  var _descLangApiKey = { english: "english", turkish: "turkish" };
 
   function openDescriptionModal(listingId) {
     var listing = LISTINGS_DATA.find(function (l) { return l.id === listingId; });
     if (!listing) return;
-    _descModalListingId = listingId;
-    _descModalOriginal = listing.description || "";
-    _descModalEnglish = listing.description_english || "";
+    _descListingId = listingId;
+    _descTexts.swedish = listing.description || "";
+    _descTexts.english = listing.description_english || "";
+    _descTexts.turkish = listing.description_turkish || "";
 
-    var langToggle = document.getElementById("desc-modal-lang-toggle");
-    var translateBtn = document.getElementById("desc-translate-btn");
+    // Update translate button labels
+    document.getElementById("desc-btn-en-text").textContent = _descTexts.english ? "\u21ba Re-translate EN" : "\u2192 English";
+    document.getElementById("desc-btn-tr-text").textContent = _descTexts.turkish ? "\u21ba Re-translate TR" : "\u2192 Turkish";
 
-    if (_descModalEnglish) {
-      // Already translated — show English by default
-      _descModalShowingEnglish = true;
-      document.getElementById("desc-modal-text").textContent = _descModalEnglish;
-      langToggle.classList.remove("hidden");
-      langToggle.classList.add("flex");
-      document.getElementById("desc-translate-btn-text").textContent = "Re-translate";
-      setDescLangActive("english");
+    // Show tabs bar only if at least one translation exists
+    var langBar = document.getElementById("desc-lang-bar");
+    if (_descTexts.english || _descTexts.turkish) {
+      langBar.classList.remove("hidden");
+      langBar.classList.add("flex");
+      // Refresh tab visibility
+      document.getElementById("desc-tab-english").style.display = _descTexts.english ? "" : "none";
+      document.getElementById("desc-tab-turkish").style.display = _descTexts.turkish ? "" : "none";
     } else {
-      _descModalShowingEnglish = false;
-      document.getElementById("desc-modal-text").textContent = _descModalOriginal;
-      langToggle.classList.add("hidden");
-      langToggle.classList.remove("flex");
-      document.getElementById("desc-translate-btn-text").textContent = "Translate with AI";
-      setDescLangActive("original");
+      langBar.classList.add("hidden");
+      langBar.classList.remove("flex");
     }
+
+    // Default: best available language (Turkish > English > Swedish)
+    var defaultLang = _descTexts.turkish ? "turkish" : (_descTexts.english ? "english" : "swedish");
+    showLang(defaultLang);
 
     var modal = document.getElementById("desc-modal");
     modal.classList.remove("hidden");
@@ -221,76 +236,73 @@
     document.body.style.overflow = "";
   }
 
-  function showOriginalDesc() {
-    _descModalShowingEnglish = false;
-    document.getElementById("desc-modal-text").textContent = _descModalOriginal;
-    setDescLangActive("original");
+  function showLang(lang) {
+    if (!_descTexts[lang]) return;
+    _descActiveLang = lang;
+    document.getElementById("desc-modal-text").textContent = _descTexts[lang];
+    // Update active tab style
+    var tabs = { swedish: "desc-tab-swedish", english: "desc-tab-english", turkish: "desc-tab-turkish" };
+    Object.keys(tabs).forEach(function (l) {
+      var btn = document.getElementById(tabs[l]);
+      if (l === lang) {
+        btn.classList.add("bg-gray-900", "text-white");
+        btn.classList.remove("text-gray-500", "hover:bg-gray-200");
+      } else {
+        btn.classList.remove("bg-gray-900", "text-white");
+        btn.classList.add("text-gray-500", "hover:bg-gray-200");
+      }
+    });
   }
 
-  function showEnglishDesc() {
-    if (!_descModalEnglish) return;
-    _descModalShowingEnglish = true;
-    document.getElementById("desc-modal-text").textContent = _descModalEnglish;
-    setDescLangActive("english");
-  }
-
-  function setDescLangActive(which) {
-    var origBtn = document.getElementById("desc-lang-original");
-    var engBtn = document.getElementById("desc-lang-english");
-    var activeClass = "bg-gray-900 dark:bg-white text-white dark:text-gray-900".split(" ");
-    var inactiveClass = "text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700".split(" ");
-    if (which === "original") {
-      activeClass.forEach(function (c) { origBtn.classList.add(c); });
-      inactiveClass.forEach(function (c) { origBtn.classList.remove(c); });
-      inactiveClass.forEach(function (c) { engBtn.classList.add(c); });
-      activeClass.forEach(function (c) { engBtn.classList.remove(c); });
-    } else {
-      activeClass.forEach(function (c) { engBtn.classList.add(c); });
-      inactiveClass.forEach(function (c) { engBtn.classList.remove(c); });
-      inactiveClass.forEach(function (c) { origBtn.classList.add(c); });
-      activeClass.forEach(function (c) { origBtn.classList.remove(c); });
-    }
-  }
-
-  async function translateDescription() {
-    if (!_descModalListingId) return;
-    var btn = document.getElementById("desc-translate-btn");
-    var btnText = document.getElementById("desc-translate-btn-text");
-    var spinner = document.getElementById("desc-translate-spinner");
+  async function translateDescription(lang) {
+    if (!_descListingId) return;
+    var btnId = lang === "english" ? "desc-btn-en" : "desc-btn-tr";
+    var textId = lang === "english" ? "desc-btn-en-text" : "desc-btn-tr-text";
+    var spinId = lang === "english" ? "desc-spin-en" : "desc-spin-tr";
+    var btn = document.getElementById(btnId);
+    var btnText = document.getElementById(textId);
+    var spinner = document.getElementById(spinId);
+    var origLabel = btnText.textContent;
     btn.disabled = true;
-    btnText.textContent = "Translating…";
+    btnText.textContent = "Translating\u2026";
     spinner.classList.remove("hidden");
     try {
-      var res = await fetch("/api/translate-description/" + _descModalListingId, { method: "POST" });
+      var res = await fetch("/api/translate-description/" + _descListingId, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lang: lang })
+      });
       var data = await res.json();
       if (!res.ok || !data.success) {
         showToast(data.error || "Translation failed.", "error");
         return;
       }
-      _descModalEnglish = data.description_english;
-      // Update LISTINGS_DATA cache so toggling works without reload
-      var listing = LISTINGS_DATA.find(function (l) { return l.id === _descModalListingId; });
-      if (listing) listing.description_english = _descModalEnglish;
+      var fieldKey = lang === "english" ? "description_english" : "description_turkish";
+      _descTexts[lang] = data[fieldKey];
 
-      var langToggle = document.getElementById("desc-modal-lang-toggle");
-      langToggle.classList.remove("hidden");
-      langToggle.classList.add("flex");
+      // Update LISTINGS_DATA cache
+      var listing = LISTINGS_DATA.find(function (l) { return l.id === _descListingId; });
+      if (listing) listing[fieldKey] = _descTexts[lang];
 
-      // Switch to English view
-      _descModalShowingEnglish = true;
-      document.getElementById("desc-modal-text").textContent = _descModalEnglish;
-      setDescLangActive("english");
-      btnText.textContent = "Re-translate";
-      showToast("Translated successfully!", "success");
+      // Show the tab for this language
+      var langBar = document.getElementById("desc-lang-bar");
+      langBar.classList.remove("hidden");
+      langBar.classList.add("flex");
+      document.getElementById(lang === "english" ? "desc-tab-english" : "desc-tab-turkish").style.display = "";
+
+      // Switch view to the newly translated language
+      showLang(lang);
+      btnText.textContent = lang === "english" ? "\u21ba Re-translate EN" : "\u21ba Re-translate TR";
+      showToast("Translated to " + (lang === "english" ? "English" : "Turkish") + "!", "success");
     } catch (e) {
       showToast("Translation request failed.", "error");
+      btnText.textContent = origLabel;
     } finally {
       btn.disabled = false;
       spinner.classList.add("hidden");
     }
   }
 
-  // Close on Escape key
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape") closeDescriptionModal();
   });

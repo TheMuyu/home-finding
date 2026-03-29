@@ -11,6 +11,7 @@ DB_PATH = os.path.join(os.path.dirname(__file__),
 NEW_COLUMNS = [
     ("listings", "amenities",           "TEXT DEFAULT '[]'"),
     ("listings", "description_english", "TEXT"),
+    ("listings", "description_turkish", "TEXT"),
     # (table, column_name, sql_type_with_default)
     ("listings", "available_until",      "TEXT"),
     ("listings", "home_type",            "TEXT"),

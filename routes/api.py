@@ -477,10 +477,24 @@ def transit_route(listing_id):
 
 @api_bp.route("/translate-description/<int:listing_id>", methods=["POST"])
 def translate_description(listing_id):
-    """Translate listing description from Swedish to English using Claude."""
+    """Translate listing description to English or Turkish using Claude.
+    Body: {"lang": "english"} or {"lang": "turkish"} (default: "english")
+    """
     from config import ANTHROPIC_API_KEY
     if not ANTHROPIC_API_KEY:
         return jsonify({"success": False, "error": "ANTHROPIC_API_KEY not configured"}), 400
+
+    body = request.get_json(silent=True) or {}
+    lang = body.get("lang", "english").lower().strip()
+
+    _lang_map = {
+        "english": ("English", "description_english"),
+        "turkish": ("Turkish", "description_turkish"),
+    }
+    if lang not in _lang_map:
+        return jsonify({"success": False, "error": f"Unsupported language: {lang}"}), 400
+
+    lang_label, db_field = _lang_map[lang]
 
     listing = Listing.query.get_or_404(listing_id)
     if not listing.description:
@@ -490,7 +504,7 @@ def translate_description(listing_id):
         import anthropic as _anthropic
         client = _anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
-        prompt = f"""Translate the following Swedish rental listing description to English.
+        prompt = f"""Translate the following Swedish rental listing description to {lang_label}.
 Keep the tone natural and preserve all the original details.
 Return only the translated text, no commentary.
 
@@ -504,13 +518,14 @@ Swedish description:
         )
         translation = response.content[0].text.strip()
 
-        listing.description_english = translation
+        setattr(listing, db_field, translation)
         db.session.commit()
 
-        return jsonify({"success": True, "description_english": translation})
+        return jsonify({"success": True, "lang": lang, db_field: translation})
 
     except Exception as e:
-        logger.error(f"Translation failed for listing {listing_id}: {e}")
+        logger.error(
+            f"Translation ({lang}) failed for listing {listing_id}: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
