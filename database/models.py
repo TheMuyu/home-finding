@@ -62,7 +62,7 @@ class Listing(db.Model):
     has_dryer = db.Column(db.Boolean, default=False)
     has_dishwasher = db.Column(db.Boolean, default=False)
     size_sqm = db.Column(db.Integer, nullable=True)
-    available_from = db.Column(db.Date, nullable=True)
+    available_from = db.Column(db.String(50), nullable=True)
     # date string or "until_further_notice"
     available_until = db.Column(db.String(50), nullable=True)
     images = db.Column(db.JSON, default=list)
@@ -118,7 +118,7 @@ class Listing(db.Model):
             "has_dryer": self.has_dryer,
             "has_dishwasher": self.has_dishwasher,
             "size_sqm": self.size_sqm,
-            "available_from": self.available_from.isoformat() if self.available_from else None,
+            "available_from": self.available_from,
             "available_until": self.available_until,
             "images": self.images or [],
             "home_type": self.home_type,

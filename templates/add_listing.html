@@ -37,7 +37,8 @@
           </svg>
         </button>
         <span class="text-xs text-gray-500 dark:text-gray-400">Each URL takes ~20–30s to scrape.</span>
-        <button type="button" onclick="showManualMode()" class="ml-auto text-xs text-gray-500 dark:text-gray-400 underline hover:text-gray-700 dark:hover:text-gray-300">
+        <button type="button" onclick="showManualMode()"
+          class="ml-auto text-xs text-gray-500 dark:text-gray-400 underline hover:text-gray-700 dark:hover:text-gray-300">
           Enter manually
         </button>
       </div>
@@ -45,14 +46,16 @@
     </div>
 
     <!-- Bulk import progress panel (hidden until bulk mode starts) -->
-    <div id="bulk-panel" class="hidden mt-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+    <div id="bulk-panel"
+      class="hidden mt-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
       <div class="flex items-center justify-between mb-3">
         <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">Importing listings…</p>
         <span id="bulk-counter" class="text-xs text-gray-500 dark:text-gray-400">0 / 0</span>
       </div>
       <!-- Progress bar -->
       <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-4">
-        <div id="bulk-progress-bar" class="bg-brand-600 h-2 rounded-full transition-all duration-300" style="width:0%"></div>
+        <div id="bulk-progress-bar" class="bg-brand-600 h-2 rounded-full transition-all duration-300" style="width:0%">
+        </div>
       </div>
       <!-- Summary badges -->
       <div class="flex gap-3 mb-4 text-xs font-medium">
@@ -70,10 +73,12 @@
       <ul id="bulk-status-list" class="space-y-1.5 max-h-72 overflow-y-auto text-xs"></ul>
       <!-- Done actions -->
       <div id="bulk-done-actions" class="hidden mt-4 flex gap-3">
-        <a href="/listings" class="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium transition-colors">
+        <a href="/listings"
+          class="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium transition-colors">
           View Listings
         </a>
-        <button onclick="resetBulkPanel()" class="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <button onclick="resetBulkPanel()"
+          class="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
           Import More
         </button>
       </div>
@@ -218,29 +223,16 @@
     <div class="p-5 grid grid-cols-2 gap-4">
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Available from</label>
-        <select name="available_from" id="field-available-from"
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
-                 text-gray-900 dark:text-gray-100 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500">
-          <option value="">Unknown</option>
-          <option value="now">Now / Immediately</option>
-        </select>
-        <!-- Date input shown if a specific start date is found -->
-        <input type="date" id="field-available-from-date" name="available_from" placeholder="yyyy-mm-dd"
-          class="hidden mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
-                 text-gray-900 dark:text-gray-100 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+        <input type="text" name="available_from" id="field-available-from" placeholder="e.g. Now, 2026-04-01" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
+                 text-gray-900 dark:text-gray-100 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500
+                 placeholder-gray-400" />
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Available until</label>
-        <select name="available_until" id="field-available-until"
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
-                 text-gray-900 dark:text-gray-100 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500">
-          <option value="">Unknown</option>
-          <option value="until_further_notice">Until further notice</option>
-        </select>
-        <!-- Date override shown if a specific end date is found -->
-        <input type="text" id="field-available-until-date" name="available_until" placeholder="yyyy-mm-dd"
-          class="hidden mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
-                 text-gray-900 dark:text-gray-100 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+        <input type="text" name="available_until" id="field-available-until"
+          placeholder="e.g. 2026-07-31, Until further notice" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
+                 text-gray-900 dark:text-gray-100 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500
+                 placeholder-gray-400" />
       </div>
     </div>
 
@@ -451,9 +443,9 @@
         const data = await res.json();
         const r = data.results && data.results[0];
         if (!r) throw new Error("No result");
-        if (r.status === "saved")   { saved++;   setRowDone(i, "saved",   r.title || urls[i]); }
+        if (r.status === "saved") { saved++; setRowDone(i, "saved", r.title || urls[i]); }
         else if (r.status === "updated") { updated++; setRowDone(i, "updated", r.title || urls[i]); }
-        else                            { errors++;   setRowDone(i, "error",   r.error || "failed"); }
+        else { errors++; setRowDone(i, "error", r.error || "failed"); }
       } catch (e) {
         errors++;
         setRowDone(i, "error", String(e));
@@ -477,14 +469,14 @@
   }
 
   const BULK_ICON = {
-    saved:   `<svg class="w-3.5 h-3.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`,
+    saved: `<svg class="w-3.5 h-3.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`,
     updated: `<svg class="w-3.5 h-3.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582M20 20v-5h-.581M5.635 19A9 9 0 104.582 9"/></svg>`,
-    error:   `<svg class="w-3.5 h-3.5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>`,
+    error: `<svg class="w-3.5 h-3.5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>`,
   };
   const BULK_LABEL_CLASS = {
-    saved:   "flex-shrink-0 text-green-600 dark:text-green-400 font-medium",
+    saved: "flex-shrink-0 text-green-600 dark:text-green-400 font-medium",
     updated: "flex-shrink-0 text-blue-600 dark:text-blue-400 font-medium",
-    error:   "flex-shrink-0 text-red-600 dark:text-red-400 font-medium",
+    error: "flex-shrink-0 text-red-600 dark:text-red-400 font-medium",
   };
 
   function setRowDone(i, status, labelText) {
@@ -547,15 +539,7 @@
     setField("field-rooms", data.rooms || "");
     setField("field-floor", data.floor != null ? data.floor : "");
     setField("field-size", data.size_sqm || "");
-    // Available from
-    if (data.available_from === "now") {
-      setSelect("field-available-from", "now");
-    } else if (data.available_from) {
-      document.getElementById("field-available-from").disabled = true;
-      const dif = document.getElementById("field-available-from-date");
-      dif.classList.remove("hidden");
-      dif.value = data.available_from;
-    }
+    setField("field-available-from", data.available_from || "");
     setTextarea("field-description", data.description || "");
 
     // Home type, furnishing, rental type
@@ -566,16 +550,7 @@
     // Deposit
     setSelect("field-deposit", data.deposit_months ? String(data.deposit_months) : "");
 
-    // Available until
-    if (data.available_until === "until_further_notice") {
-      setSelect("field-available-until", "until_further_notice");
-    } else if (data.available_until) {
-      // Specific date — use the text input instead
-      document.getElementById("field-available-until").disabled = true;
-      const di = document.getElementById("field-available-until-date");
-      di.classList.remove("hidden");
-      di.value = data.available_until;
-    }
+    setField("field-available-until", data.available_until || "");
 
     // Electricity
     if (data.electricity_included != null) {
@@ -642,8 +617,8 @@
         const badge = document.createElement("span");
         badge.textContent = allowed ? trueLabel : falseLabel;
         badge.className = `text-xs px-2 py-1 rounded-full font-medium ${allowed
-            ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300"
-            : "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
+          ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300"
+          : "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
           }`;
         container.appendChild(badge);
       }

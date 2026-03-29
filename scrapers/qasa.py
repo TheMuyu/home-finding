@@ -36,7 +36,8 @@ QASA_AMENITIES = [
     ("oven",              ["oven", "ugn"]),
     ("stove",             ["stove", "spis"]),
     ("dishwasher",        ["dish washer", "dishwasher", "diskmaskin"]),
-    ("washing_machine",   ["washing machine", "tvättmaskin", "tvättmöjlighet"]),
+    ("washing_machine",   ["washing machine",
+     "tvättmaskin", "tvättmöjlighet"]),
     ("tumble_dryer",      ["tumble dryer", "torktumlare", "torkskåp"]),
     ("shower",            ["shower", "dusch"]),
     ("bathtub",           ["bathtub", "bath tub", "badkar"]),
@@ -84,6 +85,11 @@ AMENITY_KEYWORDS = {
 
 
 # ── Shared helpers ────────────────────────────────────────────────────────────
+
+def _normalize_image_url(url: str) -> str:
+    """Upgrade any Qasa image URL to 1200x1200/smart resolution."""
+    return re.sub(r"(https://img\.qasa\.se/unsafe/)\d+x\d+(?:/smart)?", r"\g<1>1200x1200/smart", url)
+
 
 def parse_amenities(text: str) -> dict:
     """Detect amenities from description/title text by keyword matching."""
@@ -247,7 +253,20 @@ def _extract_from_next_data(next_data: dict, data: dict):
                     if val_lower in ("now", "immediately", "asap"):
                         data["available_from"] = "now"
                     else:
-                        data["available_from"] = val_lower[:10]  # keep YYYY-MM-DD part
+                        # keep YYYY-MM-DD part
+                        data["available_from"] = val_lower[:10]
+                    break
+
+        # Available until
+        if not data.get("available_until"):
+            for key in ("moveOut", "endDate", "availableTo", "availableUntil", "moveOutDate"):
+                val = listing.get(key)
+                if isinstance(val, str) and val:
+                    val_lower = val.lower().strip()
+                    if "further" in val_lower or "notice" in val_lower:
+                        data["available_until"] = "until_further_notice"
+                    else:
+                        data["available_until"] = val_lower[:10]
                     break
 
         # Description
@@ -261,9 +280,11 @@ def _extract_from_next_data(next_data: dict, data: dict):
         # Location / address
         location = listing.get("location") or listing.get("address") or {}
         if isinstance(location, dict):
-            street = location.get("street") or location.get("streetAddress") or ""
+            street = location.get("street") or location.get(
+                "streetAddress") or ""
             city = location.get("city") or ""
-            data["address"] = ", ".join(p for p in [street, city] if p) or street
+            data["address"] = ", ".join(
+                p for p in [street, city] if p) or street
             data["district"] = (
                 location.get("area")
                 or location.get("neighborhood")
@@ -288,12 +309,13 @@ def _extract_from_next_data(next_data: dict, data: dict):
                 urls = []
                 for img in imgs[:10]:
                     url = (
-                        img.get("url") or img.get("src") or img.get("uri") or ""
+                        img.get("url") or img.get(
+                            "src") or img.get("uri") or ""
                         if isinstance(img, dict)
                         else str(img)
                     )
                     if url:
-                        urls.append(url)
+                        urls.append(_normalize_image_url(url))
                 if urls:
                     data["images"] = urls
                 break
@@ -425,7 +447,7 @@ def _scrape_listing_page_dom(page, data: dict):
             for img in imgs[:10]:
                 src = img.get_attribute("src") or ""
                 if src and not src.endswith(".svg") and "placeholder" not in src.lower():
-                    urls.append(src)
+                    urls.append(_normalize_image_url(src))
             if urls:
                 data["images"] = urls
         except Exception:
@@ -536,7 +558,8 @@ def _parse_qasa_page_text(text: str, data: dict):
     # ── Base rent (not monthly total which includes service fee) ──────────────
     # Page format: "Rent\n\nSEK\xa013,000"  (double newline + non-breaking space)
     if not data.get("price_sek"):
-        m = re.search(r"(?<!\w)Rent\n\n\s*SEK[\s\xa0]*([\d,\xa0\s]+)", text, re.IGNORECASE)
+        m = re.search(
+            r"(?<!\w)Rent\n\n\s*SEK[\s\xa0]*([\d,\xa0\s]+)", text, re.IGNORECASE)
         if m:
             try:
                 val = int(re.sub(r"[,\s\xa0]", "", m.group(1)))
@@ -547,7 +570,8 @@ def _parse_qasa_page_text(text: str, data: dict):
 
     # ── Service fee: "Service fee\n\nSEK\xa0773" ─────────────────────────────
     if not data.get("service_fee_sek"):
-        m = re.search(r"service fee\s*\n+\s*SEK[\s\xa0]*([\d,\xa0\s]+)", text, re.IGNORECASE)
+        m = re.search(
+            r"service fee\s*\n+\s*SEK[\s\xa0]*([\d,\xa0\s]+)", text, re.IGNORECASE)
         if m:
             try:
                 val = int(re.sub(r"[,\s\xa0]", "", m.group(1)))
@@ -586,12 +610,18 @@ def _parse_qasa_page_text(text: str, data: dict):
 
     # Available from
     if not data.get("available_from"):
-        # "Move in\n\nNow" or "Available from\n\nNow"
-        if re.search(r"(?:move.?in|available\s+from)[\s\S]{0,20}\bnow\b", text, re.IGNORECASE):
+        # "Move in\n\nNow", "Available from\n\nNow", bare "Now →", or "Dates\nNow\n..."
+        if re.search(
+            r"(?:move.?in|available\s+from)[\s\S]{0,20}\bnow\b"
+            r"|\bnow\s*[\u2192\u2013\u2014\-]\s*\d{4}-\d{2}-\d{2}"
+            r"|dates[\s\S]{0,30}\bnow\b",
+            text, re.IGNORECASE
+        ):
             data["available_from"] = "now"
         else:
             # Specific date patterns: "2025-04-01", "Apr 1, 2025", "1 Apr 2025"
             for pat in (
+                r"dates[\s\S]{0,20}?(\d{4}-\d{2}-\d{2})",
                 r"(?:move.?in|available\s+from)[\s\S]{0,30}(\d{4}-\d{2}-\d{2})",
                 r"(?:move.?in|available\s+from)[\s\S]{0,30}(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4})",
                 r"(?:move.?in|available\s+from)[\s\S]{0,30}((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},?\s+\d{4})",
@@ -612,9 +642,18 @@ def _parse_qasa_page_text(text: str, data: dict):
         if "until further notice" in tl:
             data["available_until"] = "until_further_notice"
         else:
-            m = re.search(r"until\s+(\d{4}-\d{2}-\d{2})", text, re.IGNORECASE)
-            if m:
-                data["available_until"] = m.group(1)
+            for pat in (
+                r"dates[\s\S]{0,50}?[\u2192\u2013\u2014>]\s*(\d{4}-\d{2}-\d{2})",
+                r"move[\ \-]*out[\s\S]{0,20}(\d{4}-\d{2}-\d{2})",
+                r"end\s+date[\s\S]{0,20}(\d{4}-\d{2}-\d{2})",
+                r"until\s+(\d{4}-\d{2}-\d{2})",
+                r"[\u2192\u2013\u2014>]\s*(\d{4}-\d{2}-\d{2})",
+                r"\bnow\s*\n\s*(\d{4}-\d{2}-\d{2})",
+            ):
+                m = re.search(pat, text, re.IGNORECASE)
+                if m:
+                    data["available_until"] = m.group(1)
+                    break
 
     # ── Comprehensive amenity detection ──────────────────────────────────────
     detected = []
@@ -627,8 +666,8 @@ def _parse_qasa_page_text(text: str, data: dict):
     # Sync legacy boolean fields
     amenities_set = set(data.get("amenities") or [])
     data["has_washing_machine"] = "washing_machine" in amenities_set
-    data["has_dryer"]           = "tumble_dryer"    in amenities_set
-    data["has_dishwasher"]      = "dishwasher"      in amenities_set
+    data["has_dryer"] = "tumble_dryer" in amenities_set
+    data["has_dishwasher"] = "dishwasher" in amenities_set
 
     # ── House rules ───────────────────────────────────────────────────────────
     rules = data.get("house_rules") or {}
@@ -753,7 +792,8 @@ def extract_from_url(url: str) -> dict | None:
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
-        logger.error("Playwright not installed. Run: playwright install chromium")
+        logger.error(
+            "Playwright not installed. Run: playwright install chromium")
         return None
 
     try:
@@ -808,7 +848,8 @@ def scrape_qasa(
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
-        logger.error("Playwright not installed. Run: playwright install chromium")
+        logger.error(
+            "Playwright not installed. Run: playwright install chromium")
         return []
 
     search_url = _build_search_url(min_price, max_price, min_rooms, max_rooms)
@@ -879,7 +920,8 @@ def scrape_qasa(
 
             # ── Step 2: visit each listing page ──────────────────────────
             for i, listing_url in enumerate(listing_urls):
-                logger.info(f"Scraping {i + 1}/{len(listing_urls)}: {listing_url}")
+                logger.info(
+                    f"Scraping {i + 1}/{len(listing_urls)}: {listing_url}")
                 try:
                     _goto(page, listing_url)
                     data = _extract_page_data(page, listing_url)

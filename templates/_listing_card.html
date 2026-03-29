@@ -7,20 +7,17 @@
   data-amenities="{{ (listing.amenities or []) | join(',') }}">
 
   <!-- ── Compact Card Header (always visible, clickable) ──────── -->
-  <div
-    class="listing-card-header p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
+  <div class="listing-card-header p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
     onclick="toggleCard({{ listing.id }})">
     <div class="flex gap-3">
       <!-- Thumbnail + status badge below -->
       <div class="flex flex-col items-center gap-1 flex-shrink-0">
-        <div
-          class="w-20 h-16 rounded-lg bg-gray-200 dark:bg-gray-700 overflow-hidden flex items-center justify-center">
+        <div class="w-20 h-16 rounded-lg bg-gray-200 dark:bg-gray-700 overflow-hidden flex items-center justify-center">
           {% if listing.images %}
           <img src="{{ listing.images[0] }}" alt="{{ listing.title }}" class="w-full h-full object-cover"
             onerror="this.parentElement.innerHTML='<svg class=\'w-8 h-8 text-gray-400\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z\'/></svg>'">
           {% else %}
-          <svg class="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor"
-            viewBox="0 0 24 24">
+          <svg class="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
               d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" />
           </svg>
@@ -59,8 +56,8 @@
             <button onclick="event.stopPropagation(); toggleSave({{ listing.id }}, this)"
               data-saved="{{ listing.is_saved|lower }}"
               class="flex-shrink-0 transition-colors {% if listing.is_saved %}text-yellow-400{% else %}text-gray-300 dark:text-gray-600 hover:text-yellow-400{% endif %}">
-              <svg class="w-4 h-4" fill="{{ 'currentColor' if listing.is_saved else 'none' }}"
-                stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-4 h-4" fill="{{ 'currentColor' if listing.is_saved else 'none' }}" stroke="currentColor"
+                viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
               </svg>
@@ -123,8 +120,7 @@
             {{ listing.rooms }} rum{% if listing.size_sqm %} · {{ listing.size_sqm }} m²{% endif %}
           </span>
           {% if listing.available_from %}
-          <span class="text-xs text-gray-500 dark:text-gray-400">· From {{ listing.available_from.strftime("%d
-            %b") }}</span>
+          <span class="text-xs text-gray-500 dark:text-gray-400">· From {{ listing.available_from }}</span>
           {% endif %}
         </div>
 
@@ -148,8 +144,7 @@
 
           <!-- Commute -->
           {% if listing.commute_minutes %}
-          <span
-            class="text-xs px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
+          <span class="text-xs px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
             {{ listing.commute_minutes }} min
           </span>
           {% endif %}
@@ -166,8 +161,7 @@
           } %}
           {% if listing.amenities %}
           {% for key in listing.amenities %}
-          <span
-            class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+          <span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
             {{ amenity_labels.get(key, key) }}
           </span>
           {% endfor %}
@@ -364,8 +358,7 @@
 
       <!-- Nearby stops -->
       {% if listing.nearby_stops %}
-      <div
-        class="{% if listing.commute_minutes %}border-t border-gray-100 dark:border-gray-700/50 pt-2{% endif %}">
+      <div class="{% if listing.commute_minutes %}border-t border-gray-100 dark:border-gray-700/50 pt-2{% endif %}">
         <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Nearby stops</p>
         <div class="space-y-0.5">
           {% for stop in (listing.nearby_stops or [])[:4] %}

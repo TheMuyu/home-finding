@@ -151,21 +151,7 @@ def save_listing():
     except (TypeError, ValueError):
         size_sqm = None
 
-    # Available from date
-    available_from = None
-    available_from_str = request.form.get("available_from", "").strip()
-    if available_from_str:
-        if available_from_str == "now":
-            available_from = date.today()
-        else:
-            for fmt in ("%Y-%m-%d", "%d %b %Y", "%b %d, %Y", "%B %d, %Y", "%d %B %Y"):
-                try:
-                    available_from = datetime.strptime(
-                        available_from_str, fmt).date()
-                    break
-                except ValueError:
-                    continue
-
+    available_from = request.form.get("available_from", "").strip() or None
     available_until = request.form.get("available_until", "").strip() or None
 
     # Amenities — collected from individual amenity_X checkboxes
@@ -384,7 +370,7 @@ def bulk_import():
             rooms=item.get("rooms") or 1,
             floor=item.get("floor"),
             size_sqm=item.get("size_sqm"),
-            available_from=None,
+            available_from=item.get("available_from"),
             available_until=item.get("available_until"),
             amenities=amenities,
             has_washing_machine="washing_machine" in amenities,
@@ -412,6 +398,8 @@ def bulk_import():
             existing.floor = item.get("floor") if item.get(
                 "floor") is not None else existing.floor
             existing.size_sqm = item.get("size_sqm") or existing.size_sqm
+            existing.available_from = item.get(
+                "available_from") or existing.available_from
             existing.available_until = item.get(
                 "available_until") or existing.available_until
             existing.amenities = amenities or existing.amenities
