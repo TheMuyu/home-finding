@@ -1,12 +1,14 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(Path(__file__).parent / ".env")
 
 TRAFIKLAB_RESROBOT_KEY = os.getenv("TRAFIKLAB_RESROBOT_KEY", "")
 TRAFIKLAB_STOPS_KEY = os.getenv("TRAFIKLAB_STOPS_KEY", "")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-FLASK_SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "dev-secret-key-change-in-production")
+FLASK_SECRET_KEY = os.getenv(
+    "FLASK_SECRET_KEY", "dev-secret-key-change-in-production")
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "")
 
 _API_KEY_REGISTRY = [

@@ -73,7 +73,7 @@
       <ul id="bulk-status-list" class="space-y-1.5 max-h-72 overflow-y-auto text-xs"></ul>
       <!-- Done actions -->
       <div id="bulk-done-actions" class="hidden mt-4 flex gap-3">
-        <a href="/listings"
+        <a href="{{ url_for('listings.index') }}"
           class="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium transition-colors">
           View Listings
         </a>
@@ -550,7 +550,13 @@
     // Deposit
     setSelect("field-deposit", data.deposit_months ? String(data.deposit_months) : "");
 
-    setField("field-available-until", data.available_until || "");
+    const UNTIL_LABELS = {
+      "until_further_notice": "Until further notice",
+      "long_term": "Long term",
+      "short_term": "Short term",
+    };
+    const untilRaw = data.available_until || "";
+    setField("field-available-until", UNTIL_LABELS[untilRaw] || untilRaw);
 
     // Electricity
     if (data.electricity_included != null) {

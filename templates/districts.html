@@ -27,12 +27,12 @@
         <a href="{{ url_for('listings.districts_page') }}?lang=en"
           class="flex items-center gap-1 px-3 py-1.5 transition-colors
                   {% if lang != 'tr' %}bg-brand-600 text-white{% else %}text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700{% endif %}">
-          🇬🇧 EN
+          <span class="fi fi-gb"></span> EN
         </a>
         <a href="{{ url_for('listings.districts_page') }}?lang=tr"
           class="flex items-center gap-1 px-3 py-1.5 transition-colors
                   {% if lang == 'tr' %}bg-brand-600 text-white{% else %}text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700{% endif %}">
-          🇹🇷 TR
+          <span class="fi fi-tr"></span> TR
         </a>
       </div>
 

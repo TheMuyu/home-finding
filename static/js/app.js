@@ -713,6 +713,7 @@ window._workMarker = null;
 window._listingById = {};   // fast lookup: listingId → listing data
 window._supermarketLayers = []; // supermarket markers shown on card expand
 window._routeLayers = []; // transit route polylines shown on card expand
+window._showSupermarkets = false; // supermarket overlay toggle (default off)
 
 /* Decode a Google Maps encoded polyline string → [[lat, lng], ...] */
 function decodePolyline(str) {
@@ -874,6 +875,14 @@ async function showMapOverlays(listing) {
     } catch (_) { /* no route — silently skip */ }
   }
 
+  if (window._showSupermarkets) {
+    _showSupermarketMarkers(listing);
+  }
+}
+
+function _showSupermarketMarkers(listing) {
+  const map = window._map;
+  if (!map) return;
   const supermarkets = (listing.nearby_pois || {}).supermarkets || [];
   supermarkets.forEach(poi => {
     if (!poi.lat || !poi.lng) return;
@@ -904,6 +913,35 @@ async function showMapOverlays(listing) {
       );
     window._supermarketLayers.push(marker);
   });
+}
+
+function toggleSupermarketsOverlay() {
+  window._showSupermarkets = !window._showSupermarkets;
+
+  const btn = document.getElementById("supermarket-toggle");
+  const knob = document.getElementById("supermarket-toggle-knob");
+  if (btn) {
+    btn.setAttribute("aria-checked", window._showSupermarkets ? "true" : "false");
+    btn.style.backgroundColor = window._showSupermarkets ? "#0284c7" : "";
+    btn.classList.toggle("bg-gray-200", !window._showSupermarkets);
+    btn.classList.toggle("dark:bg-gray-600", !window._showSupermarkets);
+  }
+  if (knob) {
+    knob.style.transform = window._showSupermarkets ? "translateX(16px)" : "";
+  }
+
+  // Clear existing supermarket markers
+  const map = window._map;
+  if (map) {
+    window._supermarketLayers.forEach(m => map.removeLayer(m));
+    window._supermarketLayers = [];
+  }
+
+  // If a card is expanded and toggle is now ON, show supermarkets immediately
+  if (window._showSupermarkets && window._expandedCardId !== null) {
+    const listing = (window._listingById || {})[window._expandedCardId];
+    if (listing) _showSupermarketMarkers(listing);
+  }
 }
 
 function clearMapOverlays() {

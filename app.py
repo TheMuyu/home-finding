@@ -24,18 +24,22 @@ def create_app():
     def inject_globals():
         unscored_count = 0
         db_theme = "light"
+        work_address_missing = False
         try:
             from database.models import Listing, UserSettings
-            unscored_count = Listing.query.filter(Listing.ai_score.is_(None)).count()
+            unscored_count = Listing.query.filter(
+                Listing.ai_score.is_(None)).count()
             settings = UserSettings.query.first()
             if settings:
                 db_theme = settings.theme or "light"
+                work_address_missing = not bool(settings.work_address)
         except Exception:
             pass
         return {
             "missing_keys": get_missing_api_keys(),
             "unscored_count": unscored_count,
             "db_theme": db_theme,
+            "work_address_missing": work_address_missing,
         }
 
     return app

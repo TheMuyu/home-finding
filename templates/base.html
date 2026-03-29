@@ -18,6 +18,9 @@
     })();
   </script>
 
+  <!-- Flag icons (emoji flags don't render on Windows) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/css/flag-icons.min.css" />
+
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -77,7 +80,9 @@
                    {% if request.endpoint == 'listings.index' %}bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white{% endif %}">
             Listings
             {% if unscored_count %}
-            <span class="text-[10px] bg-amber-500 text-white rounded-full px-1.5 py-0.5 font-semibold leading-none" title="{{ unscored_count }} unscored listing{{ 's' if unscored_count != 1 else '' }}">{{ unscored_count }}</span>
+            <span class="text-[10px] bg-amber-500 text-white rounded-full px-1.5 py-0.5 font-semibold leading-none"
+              title="{{ unscored_count }} unscored listing{{ 's' if unscored_count != 1 else '' }}">{{ unscored_count
+              }}</span>
             {% endif %}
           </a>
           <a href="{{ url_for('listings.districts_page') }}"
@@ -97,7 +102,9 @@
         </div>
 
         <!-- Mobile hamburger -->
-        <button id="mobile-menu-btn" onclick="toggleMobileMenu()" class="sm:hidden p-2 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" aria-label="Open menu">
+        <button id="mobile-menu-btn" onclick="toggleMobileMenu()"
+          class="sm:hidden p-2 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          aria-label="Open menu">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
@@ -122,14 +129,22 @@
   </nav>
 
   <!-- Mobile nav menu (hidden by default) -->
-  <div id="mobile-menu" class="hidden sm:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-2 space-y-1">
-    <a href="{{ url_for('listings.index') }}" class="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+  <div id="mobile-menu"
+    class="hidden sm:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-2 space-y-1">
+    <a href="{{ url_for('listings.index') }}"
+      class="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
       Listings
-      {% if unscored_count %}<span class="text-[10px] bg-amber-500 text-white rounded-full px-1.5 py-0.5 font-semibold">{{ unscored_count }}</span>{% endif %}
+      {% if unscored_count %}<span
+        class="text-[10px] bg-amber-500 text-white rounded-full px-1.5 py-0.5 font-semibold">{{ unscored_count
+        }}</span>{% endif %}
     </a>
-    <a href="{{ url_for('listings.districts_page') }}" class="block px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Districts</a>
-    <a href="{{ url_for('settings.settings_page') }}" class="block px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Settings</a>
-    <a href="{{ url_for('listings.add_listing_page') }}" class="block px-3 py-2 rounded-md text-sm font-semibold text-brand-600 dark:text-brand-400 hover:bg-gray-100 dark:hover:bg-gray-700">+ Add Listing</a>
+    <a href="{{ url_for('listings.districts_page') }}"
+      class="block px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Districts</a>
+    <a href="{{ url_for('settings.settings_page') }}"
+      class="block px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Settings</a>
+    <a href="{{ url_for('listings.add_listing_page') }}"
+      class="block px-3 py-2 rounded-md text-sm font-semibold text-brand-600 dark:text-brand-400 hover:bg-gray-100 dark:hover:bg-gray-700">+
+      Add Listing</a>
   </div>
   <script>
     function toggleMobileMenu() {
@@ -159,6 +174,28 @@
   </div>
   {% endif %}
   {% endwith %}
+
+  <!-- Work address warning -->
+  {% if work_address_missing %}
+  <div id="work-address-warning" class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+    <div
+      class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-700">
+      <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+      </svg>
+      <span>Work address is not set — commute times won't be calculated.
+        <a href="{{ url_for('settings.settings_page') }}" class="underline font-semibold hover:opacity-80">Go to
+          Settings</a>
+      </span>
+      <button onclick="this.parentElement.parentElement.remove()" class="ml-auto opacity-60 hover:opacity-100">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  </div>
+  {% endif %}
 
   <!-- Main content -->
   <main>
