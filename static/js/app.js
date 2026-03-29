@@ -237,6 +237,7 @@ async function reEnrich(listingId) {
       const parts = [];
       if (e.geocoded) parts.push("location");
       if (e.commute) parts.push("commute");
+      if (e.route) parts.push("transit route");
       if (e.stops) parts.push("nearby stops");
       if (e.pois) parts.push("POIs");
       showToast(parts.length ? `Updated: ${parts.join(", ")}.` : "Already up to date.", "success");
@@ -709,7 +710,7 @@ function initDistrictFilters() {
 window._aiLang = {}; // listingId → 'en' | 'tr'
 
 function toggleAiLang(listingId) {
-  const current = window._aiLang[listingId] || 'en';
+  const current = window._aiLang[listingId] || 'tr';
   const next = current === 'en' ? 'tr' : 'en';
   window._aiLang[listingId] = next;
 
@@ -1130,8 +1131,9 @@ async function enrichAll() {
         showToast('All listings already enriched.', 'info');
         btn.disabled = false; txt.textContent = 'Enrich';
       } else {
-        showToast(`Enriching ${data.queued} listing(s)… reloading shortly.`, 'success', 8000);
-        setTimeout(() => window.location.reload(), 6000);
+        const waitMs = Math.max(15000, data.queued * 10000);
+        showToast(`Enriching ${data.queued} listing(s)… reloading in ~${Math.round(waitMs / 1000)}s`, 'success', waitMs);
+        setTimeout(() => window.location.reload(), waitMs);
       }
     } else {
       showToast('Enrichment failed: ' + (data.error || 'Unknown error'), 'error');

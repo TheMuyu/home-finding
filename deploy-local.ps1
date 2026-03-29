@@ -12,12 +12,19 @@
 .PARAMETER Target
     Destination folder. Defaults to C:\Apps\HomeApp.
 
+.PARAMETER IncludeDb
+    When specified, copies apartment_finder.db from source to target (overwrites).
+    Omit this flag to preserve existing data at the target.
+
 .EXAMPLE
     .\deploy-local.ps1
     .\deploy-local.ps1 -Target "D:\Apps\HomeApp"
+    .\deploy-local.ps1 -IncludeDb
+    .\deploy-local.ps1 -Target "D:\Apps\HomeApp" -IncludeDb
 #>
 param(
-    [string]$Target = "C:\Apps\HomeApp"
+    [string]$Target = "C:\Apps\HomeApp",
+    [switch]$IncludeDb
 )
 
 $ErrorActionPreference = "Stop"
@@ -52,6 +59,27 @@ New-Item -ItemType Directory -Force -Path "$Target\database" | Out-Null
 robocopy "$Source\database" "$Target\database" /E /XF "*.db" /NFL /NDL /NJH /NJS
 if ($LASTEXITCODE -ge 8) { throw "robocopy (database) failed (exit $LASTEXITCODE)" }
 OK "Database module synced — existing .db files untouched."
+
+# ---------------------------------------------------------------------------
+# 2b. Optionally copy the database file
+# ---------------------------------------------------------------------------
+$dbSource = "$Source\database\apartment_finder.db"
+$dbTarget = "$Target\database\apartment_finder.db"
+if ($IncludeDb) {
+    Step "Copying database file to target (-IncludeDb specified)..."
+    if (Test-Path $dbSource) {
+        Copy-Item $dbSource $dbTarget -Force
+        OK "apartment_finder.db copied to $dbTarget"
+    } else {
+        Warn "Source DB not found at $dbSource — skipped."
+    }
+} else {
+    if (Test-Path $dbTarget) {
+        OK "Database file preserved at target (use -IncludeDb to overwrite)."
+    } else {
+        Warn "No database file at target yet — it will be created on first run."
+    }
+}
 
 # ---------------------------------------------------------------------------
 # 3. Copy .env (only if target doesn't already have one)
@@ -103,7 +131,19 @@ if ($LASTEXITCODE -ne 0) { throw "playwright install failed" }
 OK "Playwright Chromium ready."
 
 # ---------------------------------------------------------------------------
-# 7. Write convenience launchers
+# 7. Run database migrations
+# ---------------------------------------------------------------------------
+Step "Running database migrations on target..."
+if (Test-Path $dbTarget) {
+    & "$venv\Scripts\python.exe" "$Target\db_migrate.py"
+    if ($LASTEXITCODE -ne 0) { throw "db_migrate.py failed" }
+    OK "Migrations applied."
+} else {
+    OK "No database file yet — migrations will run automatically on first app start."
+}
+
+# ---------------------------------------------------------------------------
+# 8. Write convenience launchers
 # ---------------------------------------------------------------------------
 Step "Writing launcher scripts..."
 
@@ -142,4 +182,9 @@ Write-Host ""
 Write-Host "  Location : $Target" -ForegroundColor White
 Write-Host "  Launch   : $Target\start.bat" -ForegroundColor White
 Write-Host "  URL      : http://localhost:5000" -ForegroundColor White
+if ($IncludeDb) {
+    Write-Host "  Database : copied from source" -ForegroundColor Yellow
+} else {
+    Write-Host "  Database : preserved at target  (tip: use -IncludeDb to push your local DB)" -ForegroundColor DarkGray
+}
 Write-Host "========================================" -ForegroundColor Green

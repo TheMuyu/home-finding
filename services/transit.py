@@ -294,6 +294,81 @@ def get_commute_google(from_lat: float, from_lng: float, to_lat: float, to_lng: 
     }
 
 
+def get_transit_route(from_lat: float, from_lng: float, to_lat: float, to_lng: float) -> dict | None:
+    """
+    Fetch full transit route with per-step polylines from Google Maps Directions API.
+    Returns the structure stored in Listing.transit_route (used to render the journey
+    steps panel and draw the map overlay).
+
+    Returns:
+        {
+            "steps": [{"mode", "polyline", "duration_min", "distance_m",
+                        "line_name"?, "vehicle"?, "departure_stop"?, "arrival_stop"?}],
+            "total_minutes": int,
+            "summary": str,
+        }
+        or None on failure / missing API key.
+    """
+    from config import GOOGLE_MAPS_API_KEY
+    if not GOOGLE_MAPS_API_KEY:
+        return None
+
+    params = {
+        "origin": f"{from_lat},{from_lng}",
+        "destination": f"{to_lat},{to_lng}",
+        "mode": "transit",
+        "key": GOOGLE_MAPS_API_KEY,
+    }
+    dep_time = _next_weekday_8am_unix()
+    if dep_time:
+        params["departure_time"] = dep_time
+
+    try:
+        resp = requests.get(
+            "https://maps.googleapis.com/maps/api/directions/json",
+            params=params,
+            timeout=15,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    except Exception as e:
+        logger.warning(f"Google Directions route request failed: {e}")
+        return None
+
+    if data.get("status") != "OK" or not data.get("routes"):
+        logger.info(
+            f"Google Directions returned status '{data.get('status')}' — no route")
+        return None
+
+    route = data["routes"][0]
+    leg = route["legs"][0]
+
+    steps = []
+    for step in leg.get("steps", []):
+        mode = step.get("travel_mode", "WALKING")
+        entry = {
+            "mode": mode,
+            "polyline": step["polyline"]["points"],
+            "duration_min": round(step["duration"]["value"] / 60),
+            "distance_m": step["distance"]["value"],
+        }
+        if mode == "TRANSIT":
+            td = step.get("transit_details", {})
+            line = td.get("line", {})
+            entry["line_name"] = line.get("short_name") or line.get("name", "")
+            entry["vehicle"] = line.get("vehicle", {}).get("type", "BUS")
+            entry["departure_stop"] = td.get(
+                "departure_stop", {}).get("name", "")
+            entry["arrival_stop"] = td.get("arrival_stop", {}).get("name", "")
+        steps.append(entry)
+
+    return {
+        "steps": steps,
+        "total_minutes": round(leg["duration"]["value"] / 60),
+        "summary": route.get("summary", ""),
+    }
+
+
 def _haversine_m(lat1: float, lng1: float, lat2: float, lng2: float) -> int:
     """Straight-line distance between two lat/lng points, in metres."""
     R = 6_371_000

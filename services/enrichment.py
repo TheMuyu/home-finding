@@ -64,6 +64,7 @@ def _run_enrich_all(app) -> None:
                 db.or_(
                     Listing.lat.is_(None),
                     Listing.commute_minutes.is_(None),
+                    Listing.nearby_pois.is_(None),
                 )
             ).all()
             ids = [l.id for l in unenriched]
@@ -85,10 +86,10 @@ def _enrich_one(listing_id: int) -> dict:
     """
     from services.maps import geocode_address
     from services.overpass import get_nearby_pois
-    from services.transit import get_commute, get_nearby_stops
+    from services.transit import get_commute, get_nearby_stops, get_transit_route
 
     summary = {"geocoded": False, "commute": False,
-               "stops": False, "pois": False}
+               "route": False, "stops": False, "pois": False}
 
     listing = Listing.query.get(listing_id)
     if not listing:
@@ -156,6 +157,19 @@ def _enrich_one(listing_id: int) -> dict:
             logger.info(
                 f"Commute for listing {listing_id}: {commute['minutes']} min")
 
+    # ── 3.5. Fetch full transit route (journey steps + polylines) ──────────
+    if not listing.transit_route and work_lat and work_lng:
+        route = get_transit_route(listing.lat, listing.lng, work_lat, work_lng)
+        if route:
+            listing.transit_route = route
+            if not listing.commute_minutes:
+                listing.commute_minutes = route["total_minutes"]
+            db.session.commit()
+            summary["route"] = True
+            logger.info(
+                f"Transit route for listing {listing_id}: {route['total_minutes']} min, "
+                f"{len(route['steps'])} steps")
+
     # ── 4. Nearby transit stops ─────────────────────────────────────────────
     if not listing.nearby_stops:
         stops = get_nearby_stops(listing.lat, listing.lng)
@@ -170,10 +184,14 @@ def _enrich_one(listing_id: int) -> dict:
     existing_pois = listing.nearby_pois or {}
     if not existing_pois.get("supermarkets") and not existing_pois.get("parks"):
         pois = get_nearby_pois(listing.lat, listing.lng)
-        listing.nearby_pois = pois
-        db.session.commit()
-        summary["pois"] = True
-        counts = {k: len(v) for k, v in pois.items()}
-        logger.info(f"POIs for listing {listing_id}: {counts}")
+        if pois is None:
+            logger.warning(
+                f"POI fetch skipped for listing {listing_id}: all Overpass mirrors unavailable")
+        else:
+            listing.nearby_pois = pois
+            db.session.commit()
+            summary["pois"] = True
+            counts = {k: len(v) for k, v in pois.items()}
+            logger.info(f"POIs for listing {listing_id}: {counts}")
 
     return summary

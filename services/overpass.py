@@ -12,7 +12,12 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-_OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+_OVERPASS_URLS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.osm.ch/api/interpreter",
+    "https://overpass.openstreetmap.ru/api/interpreter",
+]
 _last_call: float = 0.0
 
 
@@ -38,18 +43,28 @@ def get_nearby_pois(lat: float, lng: float, radius_m: int = 1000) -> dict:
     query = _build_query(lat, lng, radius_m)
     _sleep()
 
-    try:
-        resp = requests.post(
-            _OVERPASS_URL,
-            data={"data": query},
-            headers={"User-Agent": "StockholmApartmentFinder/1.0 (personal project)"},
-            timeout=30,
-        )
-        resp.raise_for_status()
-        elements = resp.json().get("elements", [])
-    except Exception as e:
-        logger.warning(f"Overpass API request failed: {e}")
-        return {"supermarkets": [], "parks": [], "gyms": []}
+    last_exc = None
+    elements = None
+    for url in _OVERPASS_URLS:
+        try:
+            resp = requests.post(
+                url,
+                data={"data": query},
+                headers={
+                    "User-Agent": "StockholmApartmentFinder/1.0 (personal project)"},
+                timeout=8,
+            )
+            resp.raise_for_status()
+            elements = resp.json().get("elements", [])
+            break
+        except Exception as e:
+            logger.warning(f"Overpass request failed for {url}: {e}")
+            last_exc = e
+            continue
+
+    if elements is None:
+        logger.warning(f"All Overpass mirrors failed. Last error: {last_exc}")
+        return _get_pois_google(lat, lng, radius_m)
 
     supermarkets = []
     parks = []
@@ -64,7 +79,8 @@ def get_nearby_pois(lat: float, lng: float, radius_m: int = 1000) -> dict:
 
         name = el.get("tags", {}).get("name", "")
         dist = _haversine_m(lat, lng, el_lat, el_lng)
-        entry = {"name": name, "lat": el_lat, "lng": el_lng, "distance_m": dist}
+        entry = {"name": name, "lat": el_lat,
+                 "lng": el_lng, "distance_m": dist}
 
         tags = el.get("tags", {})
         shop = tags.get("shop", "")
@@ -87,6 +103,66 @@ def get_nearby_pois(lat: float, lng: float, radius_m: int = 1000) -> dict:
         "parks": parks[:10],
         "gyms": gyms[:10],
     }
+
+
+def _get_pois_google(lat: float, lng: float, radius_m: int = 1000) -> dict | None:
+    """
+    Fallback POI lookup using Google Places Nearby Search API.
+    Used when all Overpass mirrors are unavailable.
+    """
+    try:
+        from config import GOOGLE_MAPS_API_KEY
+    except ImportError:
+        return None
+    if not GOOGLE_MAPS_API_KEY:
+        return None
+
+    base = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
+    category_types = {
+        "supermarkets": "supermarket",
+        "parks": "park",
+        "gyms": "gym",
+    }
+    results = {"supermarkets": [], "parks": [], "gyms": []}
+
+    for key, place_type in category_types.items():
+        try:
+            resp = requests.get(
+                base,
+                params={
+                    "location": f"{lat},{lng}",
+                    "radius": radius_m,
+                    "type": place_type,
+                    "key": GOOGLE_MAPS_API_KEY,
+                },
+                timeout=10,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            if data.get("status") in ("OK", "ZERO_RESULTS"):
+                for place in data.get("results", [])[:10]:
+                    plat = place["geometry"]["location"]["lat"]
+                    plng = place["geometry"]["location"]["lng"]
+                    dist = _haversine_m(lat, lng, plat, plng)
+                    results[key].append({
+                        "name": place.get("name", ""),
+                        "lat": plat,
+                        "lng": plng,
+                        "distance_m": dist,
+                    })
+            else:
+                logger.warning(
+                    f"Google Places returned status '{data.get('status')}' for {place_type}")
+        except Exception as e:
+            logger.warning(
+                f"Google Places request failed for {place_type}: {e}")
+
+    for key in results:
+        results[key].sort(key=lambda x: x["distance_m"])
+
+    counts = {k: len(v) for k, v in results.items()}
+    logger.info(f"Google Places fallback POIs: {counts}")
+    return results
 
 
 def _build_query(lat: float, lng: float, radius_m: int) -> str:
@@ -115,5 +191,6 @@ def _haversine_m(lat1: float, lng1: float, lat2: float, lng2: float) -> int:
     phi1, phi2 = math.radians(lat1), math.radians(lat2)
     dphi = math.radians(lat2 - lat1)
     dlam = math.radians(lng2 - lng1)
-    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlam / 2) ** 2
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * \
+        math.cos(phi2) * math.sin(dlam / 2) ** 2
     return round(2 * R * math.asin(math.sqrt(a)))

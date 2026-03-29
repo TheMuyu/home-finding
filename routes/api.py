@@ -111,7 +111,11 @@ def enrich_all_listings():
         from services.enrichment import enrich_all_async
         enrich_all_async(current_app._get_current_object())
         unenriched_count = Listing.query.filter(
-            db.or_(Listing.lat.is_(None), Listing.commute_minutes.is_(None))
+            db.or_(
+                Listing.lat.is_(None),
+                Listing.commute_minutes.is_(None),
+                Listing.nearby_pois.is_(None),
+            )
         ).count()
         return jsonify({
             "success": True,
