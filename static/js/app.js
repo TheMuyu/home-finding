@@ -755,8 +755,12 @@ window._clusterGroup = null;
 window._workMarker = null;
 window._listingById = {};   // fast lookup: listingId → listing data
 window._supermarketLayers = []; // supermarket markers shown on card expand
+window._gymLayers = [];           // gym markers shown on card expand
+window._parkLayers = [];          // park markers shown on card expand
 window._routeLayers = []; // transit route polylines shown on card expand
 window._showSupermarkets = false; // supermarket overlay toggle (default off)
+window._showGyms = false;         // gym overlay toggle (default off)
+window._showParks = false;        // park overlay toggle (default off)
 
 /* Decode a Google Maps encoded polyline string → [[lat, lng], ...] */
 function decodePolyline(str) {
@@ -893,34 +897,45 @@ async function showMapOverlays(listing) {
 
   // --- Transit route overlay ---
   if (listing.lat && listing.lng) {
-    try {
-      const resp = await fetch(`/api/transit-route/${listing.id}`);
-      const data = await resp.json();
-      if (data.success && data.steps && data.steps.length) {
-        data.steps.forEach(step => {
-          const latlngs = decodePolyline(step.polyline);
-          if (!latlngs.length) return;
-          const style = _routeStepStyle(step);
-          const line = L.polyline(latlngs, style).addTo(map);
-          const label = step.mode === "TRANSIT"
-            ? `<b>${step.line_name || step.vehicle}</b> ${step.departure_stop} → ${step.arrival_stop} (${step.duration_min} min)`
-            : `Walk ${step.duration_min} min`;
-          line.bindTooltip(label, { sticky: true, className: "route-tooltip" });
-          window._routeLayers.push(line);
-        });
-        // Fit map to show full route
-        const allPoints = window._routeLayers.flatMap(l => l.getLatLngs());
-        if (allPoints.length) map.fitBounds(L.latLngBounds(allPoints), { padding: [40, 40], maxZoom: 15 });
-        // Show route legend
-        const legend = document.getElementById("route-legend");
-        if (legend) legend.classList.remove("hidden");
-      }
-    } catch (_) { /* no route — silently skip */ }
+    let routeData = null;
+    // Prefer cached route from LISTINGS_DATA
+    if (listing.transit_route && listing.transit_route.steps && listing.transit_route.steps.length) {
+      routeData = listing.transit_route;
+    } else {
+      // Fallback: fetch via API (should only happen for listings without cached route)
+      try {
+        const resp = await fetch(`/api/transit-route/${listing.id}`);
+        const data = await resp.json();
+        if (data.success && data.steps && data.steps.length) {
+          routeData = data;
+        }
+      } catch (_) { /* no route — silently skip */ }
+    }
+
+    if (routeData && routeData.steps) {
+      routeData.steps.forEach(step => {
+        const latlngs = decodePolyline(step.polyline);
+        if (!latlngs.length) return;
+        const style = _routeStepStyle(step);
+        const line = L.polyline(latlngs, style).addTo(map);
+        const label = step.mode === "TRANSIT"
+          ? `<b>${step.line_name || step.vehicle}</b> ${step.departure_stop} → ${step.arrival_stop} (${step.duration_min} min)`
+          : `Walk ${step.duration_min} min`;
+        line.bindTooltip(label, { sticky: true, className: "route-tooltip" });
+        window._routeLayers.push(line);
+      });
+      // Fit map to show full route
+      const allPoints = window._routeLayers.flatMap(l => l.getLatLngs());
+      if (allPoints.length) map.fitBounds(L.latLngBounds(allPoints), { padding: [40, 40], maxZoom: 15 });
+      // Show route legend
+      const legend = document.getElementById("route-legend");
+      if (legend) legend.classList.remove("hidden");
+    }
   }
 
-  if (window._showSupermarkets) {
-    _showSupermarketMarkers(listing);
-  }
+  if (window._showSupermarkets) _showSupermarketMarkers(listing);
+  if (window._showGyms) _showGymMarkers(listing);
+  if (window._showParks) _showParkMarkers(listing);
 }
 
 function _showSupermarketMarkers(listing) {
@@ -958,6 +973,90 @@ function _showSupermarketMarkers(listing) {
   });
 }
 
+function _showGymMarkers(listing) {
+  const map = window._map;
+  if (!map) return;
+  const gyms = (listing.nearby_pois || {}).gyms || [];
+  gyms.forEach(poi => {
+    if (!poi.lat || !poi.lng) return;
+    const distText = poi.distance_m
+      ? poi.distance_m < 1000 ? `${poi.distance_m}m away` : `${(poi.distance_m / 1000).toFixed(1)}km away`
+      : "";
+    const icon = L.divIcon({
+      html: `<div style="width:26px;height:26px;border-radius:50%;background:#dc2626;border:2.5px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;">💪</div>`,
+      className: "", iconSize: [26, 26], iconAnchor: [13, 13],
+    });
+    const marker = L.marker([poi.lat, poi.lng], { icon })
+      .addTo(map)
+      .bindPopup(
+        `<div style="font-size:13px;font-weight:600;margin-bottom:2px;">${poi.name || "Gym"}</div>` +
+        (distText ? `<div style="font-size:11px;color:#6b7280;">${distText}</div>` : "")
+      );
+    window._gymLayers.push(marker);
+  });
+}
+
+function _showParkMarkers(listing) {
+  const map = window._map;
+  if (!map) return;
+  const parks = (listing.nearby_pois || {}).parks || [];
+  parks.forEach(poi => {
+    if (!poi.lat || !poi.lng) return;
+    const distText = poi.distance_m
+      ? poi.distance_m < 1000 ? `${poi.distance_m}m away` : `${(poi.distance_m / 1000).toFixed(1)}km away`
+      : "";
+    const icon = L.divIcon({
+      html: `<div style="width:26px;height:26px;border-radius:50%;background:#16a34a;border:2.5px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;">🌳</div>`,
+      className: "", iconSize: [26, 26], iconAnchor: [13, 13],
+    });
+    const marker = L.marker([poi.lat, poi.lng], { icon })
+      .addTo(map)
+      .bindPopup(
+        `<div style="font-size:13px;font-weight:600;margin-bottom:2px;">${poi.name || "Park"}</div>` +
+        (distText ? `<div style="font-size:11px;color:#6b7280;">${distText}</div>` : "")
+      );
+    window._parkLayers.push(marker);
+  });
+}
+
+function toggleGymsOverlay() {
+  window._showGyms = !window._showGyms;
+  const btn = document.getElementById("gym-toggle");
+  const knob = document.getElementById("gym-toggle-knob");
+  if (btn) {
+    btn.setAttribute("aria-checked", window._showGyms ? "true" : "false");
+    btn.style.backgroundColor = window._showGyms ? "#dc2626" : "";
+    btn.classList.toggle("bg-gray-200", !window._showGyms);
+    btn.classList.toggle("dark:bg-gray-600", !window._showGyms);
+  }
+  if (knob) knob.style.transform = window._showGyms ? "translateX(16px)" : "";
+  const map = window._map;
+  if (map) { window._gymLayers.forEach(m => map.removeLayer(m)); window._gymLayers = []; }
+  if (window._showGyms && window._expandedCardId !== null) {
+    const listing = (window._listingById || {})[window._expandedCardId];
+    if (listing) _showGymMarkers(listing);
+  }
+}
+
+function toggleParksOverlay() {
+  window._showParks = !window._showParks;
+  const btn = document.getElementById("park-toggle");
+  const knob = document.getElementById("park-toggle-knob");
+  if (btn) {
+    btn.setAttribute("aria-checked", window._showParks ? "true" : "false");
+    btn.style.backgroundColor = window._showParks ? "#16a34a" : "";
+    btn.classList.toggle("bg-gray-200", !window._showParks);
+    btn.classList.toggle("dark:bg-gray-600", !window._showParks);
+  }
+  if (knob) knob.style.transform = window._showParks ? "translateX(16px)" : "";
+  const map = window._map;
+  if (map) { window._parkLayers.forEach(m => map.removeLayer(m)); window._parkLayers = []; }
+  if (window._showParks && window._expandedCardId !== null) {
+    const listing = (window._listingById || {})[window._expandedCardId];
+    if (listing) _showParkMarkers(listing);
+  }
+}
+
 function toggleSupermarketsOverlay() {
   window._showSupermarkets = !window._showSupermarkets;
 
@@ -990,10 +1089,10 @@ function toggleSupermarketsOverlay() {
 function clearMapOverlays() {
   const map = window._map;
   if (!map) return;
-  window._supermarketLayers.forEach(m => map.removeLayer(m));
-  window._supermarketLayers = [];
-  window._routeLayers.forEach(l => map.removeLayer(l));
-  window._routeLayers = [];
+  window._supermarketLayers.forEach(m => map.removeLayer(m)); window._supermarketLayers = [];
+  window._gymLayers.forEach(m => map.removeLayer(m)); window._gymLayers = [];
+  window._parkLayers.forEach(m => map.removeLayer(m)); window._parkLayers = [];
+  window._routeLayers.forEach(l => map.removeLayer(l)); window._routeLayers = [];
   const legend = document.getElementById("route-legend");
   if (legend) legend.classList.add("hidden");
 }
@@ -1132,7 +1231,10 @@ async function enrichAll() {
         btn.disabled = false; txt.textContent = 'Enrich';
       } else {
         const waitMs = Math.max(15000, data.queued * 10000);
-        showToast(`Enriching ${data.queued} listing(s)… reloading in ~${Math.round(waitMs / 1000)}s`, 'success', waitMs);
+        const msg = data.message.includes('overwrite mode')
+          ? `Enriching ALL ${data.queued} listings (overwrite mode)… reloading in ~${Math.round(waitMs / 1000)}s`
+          : `Enriching ${data.queued} listing(s)… reloading in ~${Math.round(waitMs / 1000)}s`;
+        showToast(msg, 'success', waitMs);
         setTimeout(() => window.location.reload(), waitMs);
       }
     } else {

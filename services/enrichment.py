@@ -28,11 +28,11 @@ def enrich_listing_async(app, listing_id: int) -> None:
     t.start()
 
 
-def enrich_all_async(app) -> None:
-    """Kick off enrichment for all unenriched listings in a background thread."""
+def enrich_all_async(app, enrich_all_even_if_cached: bool = False) -> None:
+    """Kick off enrichment for all listings (or unenriched only) in a background thread."""
     t = threading.Thread(
         target=_run_enrich_all,
-        args=(app,),
+        args=(app, enrich_all_even_if_cached),
         daemon=True,
     )
     t.start()
@@ -57,17 +57,23 @@ def _run_enrich_one(app, listing_id: int) -> None:
             logger.error(f"Enrichment failed for listing {listing_id}: {e}")
 
 
-def _run_enrich_all(app) -> None:
+def _run_enrich_all(app, enrich_all_even_if_cached: bool = False) -> None:
     with app.app_context():
         try:
-            unenriched = Listing.query.filter(
-                db.or_(
-                    Listing.lat.is_(None),
-                    Listing.commute_minutes.is_(None),
-                    Listing.nearby_pois.is_(None),
-                )
-            ).all()
-            ids = [l.id for l in unenriched]
+            if enrich_all_even_if_cached:
+                # Fetch ALL listings, not just missing ones
+                listings = Listing.query.all()
+                ids = [l.id for l in listings]
+            else:
+                # Only listings missing at least one geo field
+                unenriched = Listing.query.filter(
+                    db.or_(
+                        Listing.lat.is_(None),
+                        Listing.commute_minutes.is_(None),
+                        Listing.nearby_pois.is_(None),
+                    )
+                ).all()
+                ids = [l.id for l in unenriched]
             logger.info(f"Starting enrichment for {len(ids)} listings")
             for listing_id in ids:
                 try:

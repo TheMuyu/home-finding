@@ -23,6 +23,7 @@ def get_or_create_settings():
             must_have_amenities=[],
             preferred_districts=[],
             theme="light",
+            enrich_all_even_if_cached=False,
         )
         db.session.add(settings)
         db.session.commit()
@@ -44,7 +45,8 @@ def save_settings():
     settings.budget_max = int(request.form.get("budget_max", 25000) or 25000)
     settings.min_rooms = int(request.form.get("min_rooms", 1) or 1)
     settings.max_rooms = int(request.form.get("max_rooms", 3) or 3)
-    settings.max_commute_minutes = int(request.form.get("max_commute_minutes", 45) or 45)
+    settings.max_commute_minutes = int(
+        request.form.get("max_commute_minutes", 45) or 45)
 
     floor_min_raw = request.form.get("floor_min", "").strip()
     settings.floor_min = int(floor_min_raw) if floor_min_raw else None
@@ -60,6 +62,8 @@ def save_settings():
     settings.preferred_districts = preferred_districts
 
     settings.theme = request.form.get("theme", "light")
+    settings.enrich_all_even_if_cached = request.form.get(
+        "enrich_all_even_if_cached") == "on"
 
     # Geocode work address (cache means re-saves are fast; clear coords if address changes)
     if settings.work_address:
@@ -71,7 +75,8 @@ def save_settings():
                 settings.work_lng = result["lng"]
         except Exception as e:
             import logging
-            logging.getLogger(__name__).warning(f"Could not geocode work address: {e}")
+            logging.getLogger(__name__).warning(
+                f"Could not geocode work address: {e}")
     else:
         settings.work_lat = None
         settings.work_lng = None

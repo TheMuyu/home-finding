@@ -21,6 +21,7 @@ class UserSettings(db.Model):
     preferred_districts = db.Column(db.JSON, default=list)
     max_commute_minutes = db.Column(db.Integer, default=45)
     theme = db.Column(db.String(10), default="light")
+    enrich_all_even_if_cached = db.Column(db.Boolean, default=False)
 
     def to_dict(self):
         return {
@@ -40,6 +41,7 @@ class UserSettings(db.Model):
             "preferred_districts": self.preferred_districts or [],
             "max_commute_minutes": self.max_commute_minutes,
             "theme": self.theme,
+            "enrich_all_even_if_cached": self.enrich_all_even_if_cached,
         }
 
 
@@ -138,6 +140,7 @@ class Listing(db.Model):
             "amenities": self.amenities or [],
             "commute_minutes": self.commute_minutes,
             "commute_details": self.commute_details or {},
+            "transit_route": self.transit_route or {},
             "nearby_stops": self.nearby_stops or [],
             "nearby_pois": self.nearby_pois or {},
             "ai_score": self.ai_score,

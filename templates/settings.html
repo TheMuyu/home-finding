@@ -102,42 +102,44 @@
     <!-- Amenities -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
       <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-1">Must-Have Amenities</h2>
-      <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Listings missing these will be flagged by the AI scorer.</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Listings missing these will be flagged by the AI scorer.
+      </p>
 
       {% set amenity_groups = [
-        ("Laundry", [
-          ("washing_machine", "Washing machine"),
-          ("tumble_dryer",    "Tumble dryer"),
-        ]),
-        ("Kitchen", [
-          ("dishwasher", "Dishwasher"),
-        ]),
-        ("Outdoor", [
-          ("balcony",         "Balcony"),
-          ("garden",          "Garden"),
-          ("rooftop_terrace", "Rooftop terrace"),
-        ]),
-        ("Building", [
-          ("elevator",      "Elevator"),
-          ("storage_room",  "Storage room"),
-          ("parking",       "Parking"),
-          ("bike_storage",  "Bike storage"),
-        ]),
-        ("Standout", [
-          ("sauna", "Sauna"),
-          ("pool",  "Pool"),
-        ]),
+      ("Laundry", [
+      ("washing_machine", "Washing machine"),
+      ("tumble_dryer", "Tumble dryer"),
+      ]),
+      ("Kitchen", [
+      ("dishwasher", "Dishwasher"),
+      ]),
+      ("Outdoor", [
+      ("balcony", "Balcony"),
+      ("garden", "Garden"),
+      ("rooftop_terrace", "Rooftop terrace"),
+      ]),
+      ("Building", [
+      ("elevator", "Elevator"),
+      ("storage_room", "Storage room"),
+      ("parking", "Parking"),
+      ("bike_storage", "Bike storage"),
+      ]),
+      ("Standout", [
+      ("sauna", "Sauna"),
+      ("pool", "Pool"),
+      ]),
       ] %}
 
       <div class="space-y-4">
         {% for group_name, items in amenity_groups %}
         <div>
-          <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">{{ group_name }}</p>
+          <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">{{ group_name
+            }}</p>
           <div class="grid grid-cols-2 sm:grid-cols-3 gap-y-2 gap-x-4">
             {% for key, label in items %}
             <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" name="must_have_amenities" value="{{ key }}"
-                {% if key in (settings.must_have_amenities or []) %}checked{% endif %}
+              <input type="checkbox" name="must_have_amenities" value="{{ key }}" {% if key in
+                (settings.must_have_amenities or []) %}checked{% endif %}
                 class="w-4 h-4 text-brand-600 border-gray-300 dark:border-gray-600 rounded focus:ring-brand-500 bg-white dark:bg-gray-700" />
               <span class="text-sm text-gray-700 dark:text-gray-300">{{ label }}</span>
             </label>
@@ -198,21 +200,45 @@
       </div>
     </div>
 
+    <!-- Enrichment -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+      <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-1">Enrichment</h2>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Control how the "Enrich" button behaves.</p>
+      <div class="flex items-center justify-between">
+        <div>
+          <label for="enrich_all_even_if_cached" class="text-sm font-medium text-gray-700 dark:text-gray-300">Enrich All
+            (overwrite existing)</label>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">When enabled, "Enrich" will refetch all geo data
+            for every listing, even if already cached.</p>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" id="enrich_all_even_if_cached" name="enrich_all_even_if_cached" {% if
+            settings.enrich_all_even_if_cached %}checked{% endif %} class="sr-only peer">
+          <div
+            class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-300 dark:peer-focus:ring-brand-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-brand-600">
+          </div>
+        </label>
+      </div>
+    </div>
+
     <!-- API Key Status -->
     {% if missing_keys %}
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-amber-200 dark:border-amber-700/50 p-5">
       <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
         <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
         </svg>
         API Keys
       </h2>
-      <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Some features are disabled. Add keys to your <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">.env</code> file.</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Some features are disabled. Add keys to your <code
+          class="bg-gray-100 dark:bg-gray-700 px-1 rounded">.env</code> file.</p>
       <div class="space-y-2">
         {% for key in missing_keys %}
         <div class="flex items-center gap-2 text-sm">
           <span class="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0"></span>
-          <code class="text-xs bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-300">{{ key.key }}</code>
+          <code
+            class="text-xs bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-300">{{ key.key }}</code>
           <span class="text-xs text-gray-500 dark:text-gray-400">— {{ key.feature }}</span>
         </div>
         {% endfor %}

@@ -106,22 +106,39 @@ def enrich_listing(listing_id):
 
 @api_bp.route("/enrich-all", methods=["POST"])
 def enrich_all_listings():
-    """Kick off background enrichment for all unenriched listings."""
+    """Kick off background enrichment for all listings or unenriched only."""
     try:
         from services.enrichment import enrich_all_async
-        enrich_all_async(current_app._get_current_object())
-        unenriched_count = Listing.query.filter(
-            db.or_(
-                Listing.lat.is_(None),
-                Listing.commute_minutes.is_(None),
-                Listing.nearby_pois.is_(None),
-            )
-        ).count()
-        return jsonify({
-            "success": True,
-            "message": f"Enrichment started for up to {unenriched_count} listings in background.",
-            "queued": unenriched_count,
-        })
+        from database.models import UserSettings
+
+        # Get user setting
+        settings = UserSettings.query.first()
+        enrich_all_even_if_cached = settings.enrich_all_even_if_cached if settings else False
+
+        enrich_all_async(current_app._get_current_object(),
+                         enrich_all_even_if_cached)
+
+        # Count what will be processed
+        if enrich_all_even_if_cached:
+            total_count = Listing.query.count()
+            return jsonify({
+                "success": True,
+                "message": f"Enrichment started for all {total_count} listings (overwrite mode).",
+                "queued": total_count,
+            })
+        else:
+            unenriched_count = Listing.query.filter(
+                db.or_(
+                    Listing.lat.is_(None),
+                    Listing.commute_minutes.is_(None),
+                    Listing.nearby_pois.is_(None),
+                )
+            ).count()
+            return jsonify({
+                "success": True,
+                "message": f"Enrichment started for up to {unenriched_count} listings in background.",
+                "queued": unenriched_count,
+            })
     except Exception as e:
         logger.error(f"Enrich-all endpoint failed: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
