@@ -269,13 +269,31 @@ def _extract_from_next_data(next_data: dict, data: dict):
                         data["available_until"] = val_lower[:10]
                     break
 
-        # Description
-        data["description"] = (
-            listing.get("description")
-            or listing.get("body")
-            or listing.get("text")
-            or ""
-        )
+        # Description — try multiple key names
+        _desc = None
+        for _k in ("description", "body", "text", "homeDescription",
+                   "listingDescription", "about", "aboutHome",
+                   "descriptionHtml", "descriptionText", "content",
+                   "bodyText", "rentalDescription", "summary"):
+            _v = listing.get(_k)
+            if isinstance(_v, str) and len(_v) > 20:
+                _desc = _v
+                break
+        # Also check one level of common nested keys
+        if not _desc:
+            for _nk in ("rentalProperty", "property", "apartment", "home",
+                        "listing", "details", "info"):
+                _nested = listing.get(_nk)
+                if isinstance(_nested, dict):
+                    for _k in ("description", "body", "text", "about",
+                               "homeDescription", "content"):
+                        _v = _nested.get(_k)
+                        if isinstance(_v, str) and len(_v) > 20:
+                            _desc = _v
+                            break
+                if _desc:
+                    break
+        data["description"] = _desc or ""
 
         # Location / address
         location = listing.get("location") or listing.get("address") or {}
@@ -341,14 +359,46 @@ def _extract_from_next_data(next_data: dict, data: dict):
 
 def _scrape_listing_page_dom(page, data: dict):
     """Fill any missing fields by scraping the DOM and page text."""
-    # Try to expand truncated description before grabbing text
-    for read_more_sel in ('button:has-text("Read more")', 'button:has-text("Läs mer")'):
+    # Try to expand truncated description — clicking "Read more" opens a modal on Qasa
+    _read_more_clicked = False
+    for read_more_sel in ('button:has-text("Read more")', 'button:has-text("Läs mer")',
+                          'button:has-text("Visa mer")'):
         try:
             page.click(read_more_sel, timeout=2000)
-            page.wait_for_timeout(500)
+            page.wait_for_timeout(1500)  # wait for modal to fully render
+            _read_more_clicked = True
             break
         except Exception:
             continue
+
+    # If modal opened, try to grab description from it before anything else
+    if _read_more_clicked and not data.get("description"):
+        for modal_sel in ('[role="dialog"]', 'dialog',
+                          '[class*="Modal"]', '[class*="modal"]',
+                          '[class*="Dialog"]', '[class*="dialog"]',
+                          '[class*="Overlay"]', '[class*="overlay"]',
+                          '[class*="Sheet"]', '[class*="sheet"]'):
+            try:
+                el = page.query_selector(modal_sel)
+                if el:
+                    raw = el.inner_text().strip()
+                    _skip = {"about the home", "om bostaden", "close",
+                             "stäng", "read more", "läs mer", "visa mer"}
+                    lines = [ln.strip() for ln in raw.split("\n")
+                             if ln.strip() and ln.strip().lower() not in _skip]
+                    desc = "\n\n".join(lines).strip()
+                    if len(desc) > 50:
+                        data["description"] = desc
+                        break
+            except Exception:
+                continue
+        # Close the modal so it doesn't pollute other selectors
+        if data.get("description"):
+            try:
+                page.keyboard.press("Escape")
+                page.wait_for_timeout(300)
+            except Exception:
+                pass
 
     try:
         full_text = page.inner_text("body") or ""
@@ -418,14 +468,14 @@ def _scrape_listing_page_dom(page, data: dict):
     if not data.get("size_sqm") and full_text:
         data["size_sqm"] = _parse_size(full_text)
 
-    # ── Description ───────────────────────────────────────────────────────────
     if not data.get("description"):
         for sel in (
             "[class*='HomeDescription']",
             "[class*='description']",
             "[data-testid*='description']",
-            "main p",
-            "article",
+            "[class*='aboutHome']",
+            "[class*='AboutHome']",
+            "[class*='listingDescription']",
         ):
             try:
                 el = page.query_selector(sel)
@@ -436,6 +486,22 @@ def _scrape_listing_page_dom(page, data: dict):
                         break
             except Exception:
                 continue
+
+    # Last resort: collect all visible <p> elements from main/article
+    if not data.get("description"):
+        try:
+            els = page.query_selector_all("main p, article p")
+            chunks = []
+            for el in els:
+                t = el.inner_text().strip()
+                if len(t) > 40:
+                    chunks.append(t)
+                if len(chunks) >= 15:
+                    break
+            if chunks:
+                data["description"] = "\n\n".join(chunks)
+        except Exception:
+            pass
 
     # ── Images ────────────────────────────────────────────────────────────────
     if not data.get("images"):

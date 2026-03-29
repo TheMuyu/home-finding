@@ -51,6 +51,7 @@ class Listing(db.Model):
     url = db.Column(db.String(1000), unique=True, nullable=True)
     title = db.Column(db.Text, nullable=False)
     description = db.Column(db.Text, nullable=True)
+    description_english = db.Column(db.Text, nullable=True)
     address = db.Column(db.String(500), nullable=True)
     district = db.Column(db.String(200), nullable=True)
     lat = db.Column(db.Float, nullable=True)
@@ -107,6 +108,7 @@ class Listing(db.Model):
             "url": self.url,
             "title": self.title,
             "description": self.description,
+            "description_english": self.description_english,
             "address": self.address,
             "district": self.district,
             "lat": self.lat,

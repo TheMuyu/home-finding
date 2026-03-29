@@ -475,6 +475,45 @@ def transit_route(listing_id):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@api_bp.route("/translate-description/<int:listing_id>", methods=["POST"])
+def translate_description(listing_id):
+    """Translate listing description from Swedish to English using Claude."""
+    from config import ANTHROPIC_API_KEY
+    if not ANTHROPIC_API_KEY:
+        return jsonify({"success": False, "error": "ANTHROPIC_API_KEY not configured"}), 400
+
+    listing = Listing.query.get_or_404(listing_id)
+    if not listing.description:
+        return jsonify({"success": False, "error": "This listing has no description to translate"}), 400
+
+    try:
+        import anthropic as _anthropic
+        client = _anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+
+        prompt = f"""Translate the following Swedish rental listing description to English.
+Keep the tone natural and preserve all the original details.
+Return only the translated text, no commentary.
+
+Swedish description:
+{listing.description}"""
+
+        response = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        translation = response.content[0].text.strip()
+
+        listing.description_english = translation
+        db.session.commit()
+
+        return jsonify({"success": True, "description_english": translation})
+
+    except Exception as e:
+        logger.error(f"Translation failed for listing {listing_id}: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @api_bp.route("/seed", methods=["POST"])
 def run_seed():
     try:

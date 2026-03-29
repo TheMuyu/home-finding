@@ -42,6 +42,12 @@
           </h3>
           <!-- Action buttons + Save toggle -->
           <div class="flex items-center gap-1 flex-shrink-0">
+            {% if listing.description %}
+            <button onclick="event.stopPropagation(); openDescriptionModal({{ listing.id }})"
+              class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-400 transition-colors font-medium leading-tight">
+              Description
+            </button>
+            {% endif %}
             {% if listing.url %}
             <a href="{{ listing.url }}" target="_blank" rel="noopener" onclick="event.stopPropagation()"
               class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-600 hover:text-brand-600 dark:hover:text-brand-400 transition-colors font-medium leading-tight">
@@ -212,20 +218,6 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
         </svg>
       </button>
-      {% endif %}
-    </div>
-    {% endif %}
-
-    <!-- Description -->
-    {% if listing.description %}
-    <div class="mb-4">
-      <p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed desc-text" id="desc-{{ listing.id }}"
-        style="display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;">
-        {{ listing.description }}
-      </p>
-      {% if listing.description|length > 250 %}
-      <button onclick="event.stopPropagation(); toggleDesc({{ listing.id }})" id="desc-btn-{{ listing.id }}"
-        class="text-xs text-brand-600 dark:text-brand-400 mt-1 hover:underline">Show more</button>
       {% endif %}
     </div>
     {% endif %}
