@@ -22,6 +22,9 @@ NEW_COLUMNS = [
     ("listings", "deposit_months",       "INTEGER"),
     ("listings", "house_rules",          "TEXT DEFAULT '{}'"),
     ("listings", "transit_route",        "TEXT DEFAULT '{}'"),
+    ("listings", "ai_comment_turkish",   "TEXT"),
+    ("listings", "ai_pros_turkish",      "TEXT DEFAULT '[]'"),
+    ("listings", "ai_cons_turkish",      "TEXT DEFAULT '[]'"),
 ]
 
 conn = sqlite3.connect(DB_PATH)

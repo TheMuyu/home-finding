@@ -93,6 +93,9 @@ class Listing(db.Model):
     ai_comment = db.Column(db.Text, nullable=True)
     ai_pros = db.Column(db.JSON, default=list)
     ai_cons = db.Column(db.JSON, default=list)
+    ai_comment_turkish = db.Column(db.Text, nullable=True)
+    ai_pros_turkish = db.Column(db.JSON, default=list)
+    ai_cons_turkish = db.Column(db.JSON, default=list)
     is_saved = db.Column(db.Boolean, default=False)
     application_status = db.Column(
         db.String(20), nullable=True, default="not_applied")
@@ -141,6 +144,9 @@ class Listing(db.Model):
             "ai_comment": self.ai_comment,
             "ai_pros": self.ai_pros or [],
             "ai_cons": self.ai_cons or [],
+            "ai_comment_turkish": self.ai_comment_turkish,
+            "ai_pros_turkish": self.ai_pros_turkish or [],
+            "ai_cons_turkish": self.ai_cons_turkish or [],
             "is_saved": self.is_saved,
             "application_status": self.application_status,
             "application_date": self.application_date.isoformat() if self.application_date else None,

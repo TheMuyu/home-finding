@@ -109,6 +109,12 @@ def _score_one(listing_id: int) -> dict:
     )
     listing.ai_pros = result.get("pros", [])
     listing.ai_cons = result.get("cons", [])
+    listing.ai_comment_turkish = result.get("summary_tr", "") + (
+        f"\n\n{result.get('district_comment_tr', '')}" if result.get(
+            "district_comment_tr") else ""
+    ) or None
+    listing.ai_pros_turkish = result.get("pros_tr", [])
+    listing.ai_cons_turkish = result.get("cons_tr", [])
     db.session.commit()
 
     logger.info(f"Scored listing {listing_id}: {listing.ai_score}/100")
@@ -125,8 +131,8 @@ def _call_claude(client: anthropic.Anthropic, prompt: str) -> dict | str | None:
     try:
         message = client.messages.create(
             model=MODEL,
-            max_tokens=1024,
-            timeout=30,
+            max_tokens=2048,
+            timeout=60,
             messages=[{"role": "user", "content": prompt}],
         )
         raw = message.content[0].text.strip()
@@ -295,10 +301,14 @@ DESCRIPTION EXCERPT:
 Return ONLY valid JSON in this exact format (no markdown, no explanation):
 {{
   "score": <integer 0-100>,
-  "summary": "<1-2 sentence overall assessment>",
-  "pros": ["<pro 1>", "<pro 2>", "<pro 3>"],
-  "cons": ["<con 1>", "<con 2>"],
-  "district_comment": "<1 sentence about how the district fits the user>",
+  "summary": "<1-2 sentence overall assessment in English>",
+  "summary_tr": "<1-2 sentence overall assessment in Turkish>",
+  "pros": ["<English pro 1>", "<English pro 2>", "<English pro 3>"],
+  "pros_tr": ["<Turkish pro 1>", "<Turkish pro 2>", "<Turkish pro 3>"],
+  "cons": ["<English con 1>", "<English con 2>"],
+  "cons_tr": ["<Turkish con 1>", "<Turkish con 2>"],
+  "district_comment": "<1 sentence about how the district fits the user in English>",
+  "district_comment_tr": "<1 sentence about how the district fits the user in Turkish>",
   "recommendation": "<Worth visiting|Maybe|Skip>"
 }}
 

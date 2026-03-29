@@ -704,7 +704,49 @@ function initDistrictFilters() {
 }
 
 /* =====================================================================
-   8. LEAFLET MAP
+   8. AI LANGUAGE TOGGLE
+   ===================================================================== */
+window._aiLang = {}; // listingId → 'en' | 'tr'
+
+function toggleAiLang(listingId) {
+  const current = window._aiLang[listingId] || 'en';
+  const next = current === 'en' ? 'tr' : 'en';
+  window._aiLang[listingId] = next;
+
+  const label = next.toUpperCase();
+  const headerToggle = document.getElementById(`ai-lang-toggle-${listingId}`);
+  const detailToggle = document.getElementById(`ai-lang-toggle-detail-${listingId}`);
+  if (headerToggle) headerToggle.textContent = label;
+  if (detailToggle) detailToggle.textContent = label;
+
+  const enContent = document.getElementById(`ai-content-en-${listingId}`);
+  const trContent = document.getElementById(`ai-content-tr-${listingId}`);
+  if (enContent) enContent.classList.toggle('hidden', next === 'tr');
+  if (trContent) trContent.classList.toggle('hidden', next === 'en');
+}
+
+async function reScoreListing(listingId) {
+  const btn = document.getElementById(`rescore-btn-${listingId}`);
+  if (btn) { btn.disabled = true; btn.textContent = 'Scoring…'; }
+  try {
+    const resp = await fetch(`/api/score/${listingId}`, { method: 'POST' });
+    const data = await resp.json();
+    if (data.success && data.score != null) {
+      showToast(`Re-scored: ${data.score}/100 — reloading…`, 'success', 3000);
+      setTimeout(() => window.location.reload(), 800);
+    } else {
+      const msg = data.error || 'Re-scoring failed';
+      if (btn) { btn.disabled = false; btn.textContent = 'Re-Score with AI'; }
+      showToast(msg.includes('API_KEY') ? 'Add ANTHROPIC_API_KEY to .env to enable AI scoring' : msg, 'error');
+    }
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Re-Score with AI'; }
+    showToast('Re-score request failed', 'error');
+  }
+}
+
+/* =====================================================================
+   9. LEAFLET MAP
    ===================================================================== */
 window._map = null;
 window._markerById = {};   // listingId → Leaflet marker
@@ -1037,20 +1079,8 @@ async function scoreListing(id, btn) {
     const resp = await fetch(`/api/score/${id}`, { method: 'POST' });
     const data = await resp.json();
     if (data.success && data.score != null) {
-      const score = data.score;
-      const colorClass = score >= 70
-        ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
-        : score >= 40
-          ? 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300'
-          : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300';
-      const badge = document.createElement('span');
-      badge.id = `score-badge-${id}`;
-      badge.className = `text-xs px-1.5 py-0.5 rounded font-semibold ${colorClass}`;
-      badge.textContent = `AI ${score}`;
-      if (btn) btn.replaceWith(badge);
-      const wrapper = document.querySelector(`[data-listing-id="${id}"]`);
-      if (wrapper) wrapper.dataset.score = score;
-      showToast(`Scored: ${score}/100`, 'success');
+      showToast(`Scored: ${data.score}/100 — reloading…`, 'success', 3000);
+      setTimeout(() => window.location.reload(), 800);
     } else {
       const msg = data.error || 'Scoring failed';
       if (btn) { btn.textContent = 'Retry score'; btn.disabled = false; }
