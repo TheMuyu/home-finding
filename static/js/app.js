@@ -76,40 +76,6 @@ async function clearSeedData() {
   }
 }
 
-async function scrapeQasa() {
-  const btn = document.getElementById("scrape-btn");
-  const text = document.getElementById("scrape-btn-text");
-  const icon = document.getElementById("scrape-icon");
-  const spin = document.getElementById("scrape-spinner");
-
-  if (btn) btn.disabled = true;
-  if (text) text.textContent = "Scraping…";
-  if (icon) icon.classList.add("hidden");
-  if (spin) spin.classList.remove("hidden");
-  showToast("Scraping Qasa listings — this may take a few minutes…", "info", 10000);
-
-  try {
-    const res = await fetch("/scrape", { method: "POST" });
-    const data = await res.json();
-    if (res.ok) {
-      const msg = `Found ${data.new} new listing${data.new !== 1 ? "s" : ""}` +
-        (data.duplicates ? `, ${data.duplicates} duplicate${data.duplicates !== 1 ? "s" : ""} skipped` : "") +
-        (data.errors ? `, ${data.errors} error${data.errors !== 1 ? "s" : ""}` : "") + ".";
-      showToast(msg, data.new > 0 ? "success" : "info", 5000);
-      if (data.new > 0) setTimeout(() => window.location.reload(), 1200);
-    } else {
-      showToast("Scrape failed: " + (data.error || "unknown error"), "error");
-    }
-  } catch {
-    showToast("Scrape request failed. Is the server running?", "error");
-  } finally {
-    if (btn) btn.disabled = false;
-    if (text) text.textContent = "Refresh";
-    if (icon) icon.classList.remove("hidden");
-    if (spin) spin.classList.add("hidden");
-  }
-}
-
 async function toggleSave(listingId, btn) {
   try {
     const res = await fetch(`/listings/${listingId}/save`, { method: "POST" });
@@ -220,6 +186,45 @@ async function deleteListing(listingId) {
     }
   } catch {
     showToast("Delete request failed.", "error");
+  }
+}
+
+async function reScrap(listingId, url) {
+  const btn = document.getElementById(`rescrap-btn-${listingId}`);
+  const originalText = btn.innerHTML;
+
+  if (btn) btn.disabled = true;
+  btn.innerHTML = '<svg class="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg> Re-scraping…';
+  showToast("Re-scraping listing…", "info", 10000);
+
+  try {
+    const res = await fetch("/listings/bulk-import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ urls: [url] }),
+    });
+    const data = await res.json();
+    if (res.ok && data.results && data.results.length > 0) {
+      const result = data.results[0];
+      if (result.status === "updated") {
+        showToast("Listing updated with latest data!", "success", 3000);
+        setTimeout(() => window.location.reload(), 1500);
+      } else if (result.status === "saved") {
+        showToast("Listing saved!", "success", 3000);
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        showToast("Re-scrap failed: " + (result.error || "unknown error"), "error");
+      }
+    } else {
+      showToast("Re-scrap failed: " + (data.error || "unknown error"), "error");
+    }
+  } catch {
+    showToast("Re-scrap request failed. Is the server running?", "error");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
   }
 }
 

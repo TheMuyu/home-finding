@@ -77,6 +77,8 @@ class Listing(db.Model):
     furnishing = db.Column(db.String(30), nullable=True)
     # True=shared home, False=entire home
     is_shared = db.Column(db.Boolean, nullable=True)
+    # Contract type: first_hand, second_hand, sublet, or None
+    contract_type = db.Column(db.String(20), nullable=True)
     # Rent breakdown
     # Qasa service fee on top of rent
     service_fee_sek = db.Column(db.Integer, nullable=True)
@@ -133,6 +135,7 @@ class Listing(db.Model):
             "home_type": self.home_type,
             "furnishing": self.furnishing,
             "is_shared": self.is_shared,
+            "contract_type": self.contract_type,
             "service_fee_sek": self.service_fee_sek,
             "electricity_included": self.electricity_included,
             "deposit_months": self.deposit_months,

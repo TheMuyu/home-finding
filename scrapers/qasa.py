@@ -36,18 +36,19 @@ QASA_AMENITIES = [
     ("oven",              ["oven", "ugn"]),
     ("stove",             ["stove", "spis"]),
     ("dishwasher",        ["dish washer", "dishwasher", "diskmaskin"]),
-    ("washing_machine",   ["washing machine",
-     "tvättmaskin", "tvättmöjlighet"]),
-    ("tumble_dryer",      ["tumble dryer", "torktumlare", "torkskåp"]),
+    ("washing_machine",   ["washing machine", "washing_machine",
+     "tvättmaskin", "tvättmöjlighet", "washingmachine"]),
+    ("tumble_dryer",      ["tumble dryer",
+     "tumble_dryer", "torktumlare", "torkskåp"]),
     ("shower",            ["shower", "dusch"]),
     ("bathtub",           ["bathtub", "bath tub", "badkar"]),
     ("toilet",            ["toilet", "toalett"]),
     ("elevator",          ["elevator", "hiss"]),
     ("storage_room",      ["storage room", "förråd"]),
-    ("parking",           ["parking available", "parkering"]),
+    ("parking",           ["parking available", "parking", "parkering"]),
     ("bike_storage",      ["bike storage", "cykelrum", "cykelförråd"]),
     ("internet",          ["internet"]),
-    ("television",        ["television"]),
+    ("television",        ["television", "tv"]),
 ]
 
 # Human-readable labels and categories for display
@@ -371,6 +372,75 @@ def _scrape_listing_page_dom(page, data: dict):
         except Exception:
             continue
 
+    # Click "Show more" for amenities to reveal all amenities
+    try:
+        show_more_clicked = False
+
+        # First, close any open modals that might block clicks
+        try:
+            page.keyboard.press("Escape")
+            page.wait_for_timeout(500)
+        except Exception:
+            pass
+
+        # Look for the amenities Show more button specifically
+        # It should be near the amenities section
+        for show_more_sel in (
+            'button:has-text("Show more")',  # Basic
+            'button:has-text("Visa mer")',   # Swedish
+            'button:has-text("Show all amenities")',  # Explicit
+            '[data-testid*="show-more"]',     # Test ID
+            'button:has-text("Show more amenities")',  # More specific
+            'button[class*="show"]',         # Class-based
+            'button[class*="more"]',          # Class-based
+            '[aria-label*="more"]',           # ARIA label
+        ):
+            try:
+                # Find all matching buttons
+                buttons = page.query_selector_all(show_more_sel)
+
+                for button in buttons:
+                    try:
+                        # Check if this button is near amenities
+                        parent = button.evaluate(
+                            'el => el.parentElement?.textContent?.toLowerCase()')
+                        if parent and any(word in parent for word in ['amenities', 'balcony', 'dish', 'fridge', 'premium']):
+                            # This looks like the amenities button
+                            button.click(timeout=2000)
+                            page.wait_for_timeout(1500)  # Wait for animation
+                            show_more_clicked = True
+                            logger.info(
+                                f"Clicked amenities show more button with selector: {show_more_sel}")
+                            break
+                    except Exception as e:
+                        logger.debug(
+                            f"Failed to click button with selector {show_more_sel}: {e}")
+                        continue
+
+                if show_more_clicked:
+                    break
+
+            except Exception:
+                continue
+
+        if not show_more_clicked:
+            # Fallback: try the first Show more button
+            try:
+                first_button = page.query_selector(
+                    'button:has-text("Show more")')
+                if first_button:
+                    first_button.click(timeout=2000)
+                    page.wait_for_timeout(1500)
+                    show_more_clicked = True
+                    logger.info("Clicked first Show more button as fallback")
+            except Exception:
+                pass
+
+        if not show_more_clicked:
+            logger.info("No show more button found or clicked")
+    except Exception as e:
+        logger.warning(f"Error clicking show more button: {e}")
+
     # If modal opened, try to grab description from it before anything else
     if _read_more_clicked and not data.get("description"):
         for modal_sel in ('[role="dialog"]', 'dialog',
@@ -503,21 +573,134 @@ def _scrape_listing_page_dom(page, data: dict):
         except Exception:
             pass
 
+    # ── Amenities from DOM elements (checkboxes, icons, etc.) ─────────────────────
+    # Try to get amenities from DOM elements first (more reliable than text)
+    detected = []
+    try:
+        # Look for checked checkboxes or selected amenity elements
+        amenity_elements = page.query_selector_all(
+            'input[type="checkbox"][checked], [aria-checked="true"], '
+            '.amenity.selected, .amenity.active, [class*="amenity"][class*="selected"], '
+            '[class*="amenity"][class*="active"], input[type="checkbox"]:checked'
+        )
+
+        # If no checked checkboxes found, try to get all checkboxes and check their state
+        if not amenity_elements:
+            all_checkboxes = page.query_selector_all('input[type="checkbox"]')
+            for checkbox in all_checkboxes:
+                try:
+                    # Check if the checkbox is checked via JavaScript
+                    is_checked = checkbox.evaluate('el => el.checked')
+                    if is_checked:
+                        amenity_elements.append(checkbox)
+                        logger.info(
+                            "Found checked checkbox via JavaScript evaluation")
+                except Exception:
+                    continue
+
+        # Also try to find amenity labels with checked indicators
+        if not amenity_elements:
+            labeled_elements = page.query_selector_all(
+                'label:has(input[type="checkbox"][checked]), '
+                'label:has([aria-checked="true"]), '
+                '[class*="amenity"] label, [class*="feature"] label'
+            )
+            amenity_elements.extend(labeled_elements)
+
+        dom_amenities = []
+        for el in amenity_elements:
+            try:
+                # Get text from the element or its parent/label
+                text = el.inner_text().strip().lower()
+                if not text:
+                    # Try to get from label or parent
+                    label = el.query_selector(
+                        'label, .label, [class*="label"]')
+                    if label:
+                        text = label.inner_text().strip().lower()
+                    else:
+                        parent = el.evaluate(
+                            'el => el.parentElement?.textContent?.toLowerCase()')
+                        if parent:
+                            text = parent.strip()
+
+                if text and len(text) > 2:
+                    dom_amenities.append(text)
+                    logger.info(f"Found DOM amenity: {text}")
+            except Exception:
+                continue
+
+        # Map DOM amenity text to our amenity keys
+        for amenity_text in dom_amenities:
+            for key, keywords in QASA_AMENITIES:
+                if any(kw in amenity_text for kw in keywords):
+                    if key not in detected:
+                        detected.append(key)
+                        logger.info(
+                            f"Mapped DOM amenity '{amenity_text}' to key '{key}'")
+
+    except Exception as e:
+        logger.warning(f"Error extracting DOM amenities: {e}")
+
+    # Store detected amenities for later processing
+    data["_detected_amenities"] = detected
+
     # ── Images ────────────────────────────────────────────────────────────────
     if not data.get("images"):
+        urls = []
+
+        # First try to get images from main gallery
         try:
             imgs = page.query_selector_all(
                 "img[src*='qasa'], img[src*='cdn'], img[src*='images'], img[src*='storage']"
             )
-            urls = []
-            for img in imgs[:10]:
+            for img in imgs[:20]:  # Increased limit
                 src = img.get_attribute("src") or ""
                 if src and not src.endswith(".svg") and "placeholder" not in src.lower():
                     urls.append(_normalize_image_url(src))
-            if urls:
-                data["images"] = urls
         except Exception:
             pass
+
+        # Then check for "A second look" section or similar
+        try:
+            second_look_sections = page.query_selector_all(
+                '[class*="second"], [class*="Second"], section:has-text("second"), '
+                'div:has-text("A second look"), div:has-text("More photos")'
+            )
+            for section in second_look_sections:
+                try:
+                    section_imgs = section.query_selector_all("img")
+                    for img in section_imgs:
+                        src = img.get_attribute("src") or ""
+                        if src and not src.endswith(".svg") and "placeholder" not in src.lower():
+                            urls.append(_normalize_image_url(src))
+                except Exception:
+                    continue
+        except Exception:
+            pass
+
+        # Also try to find any image containers that might be missed
+        try:
+            additional_imgs = page.query_selector_all(
+                '[data-testid*="image"], [data-testid*="photo"], [data-testid*="gallery"] img'
+            )
+            for img in additional_imgs:
+                src = img.get_attribute("src") or ""
+                if src and not src.endswith(".svg") and "placeholder" not in src.lower():
+                    urls.append(_normalize_image_url(src))
+        except Exception:
+            pass
+
+        # Deduplicate while preserving order
+        seen = set()
+        unique_urls = []
+        for url in urls:
+            if url not in seen:
+                seen.add(url)
+                unique_urls.append(url)
+
+        if unique_urls:
+            data["images"] = unique_urls[:15]  # Limit to 15 best images
 
     # ── Coordinates from JSON-LD or Leaflet tile URLs (DOM fallback) ──────────
     if not data.get("lat") or not data.get("lng"):
@@ -621,18 +804,44 @@ def _parse_qasa_page_text(text: str, data: dict):
         elif "entire home" in tl:
             data["is_shared"] = False
 
+    # ── Contract type detection ───────────────────────────────────────────────────────
+    if not data.get("contract_type"):
+        if "first hand contract" in tl or "first-hand contract" in tl:
+            data["contract_type"] = "first_hand"
+            # First hand contracts should not have service fees
+            data["service_fee_sek"] = None
+            logger.info("Detected first hand contract")
+        elif "second hand contract" in tl or "second-hand contract" in tl:
+            data["contract_type"] = "second_hand"
+            logger.info("Detected second hand contract")
+        elif "sublet" in tl or "subletting" in tl:
+            data["contract_type"] = "sublet"
+            logger.info("Detected sublet")
+        else:
+            logger.info("No contract type detected in page text")
+    else:
+        logger.info(f"Contract type already set: {data.get('contract_type')}")
+
     # ── Base rent (not monthly total which includes service fee) ──────────────
-    # Page format: "Rent\n\nSEK\xa013,000"  (double newline + non-breaking space)
+    # Page format: "Rent\n\nSEK\xa013,000" or "Monthly cost\n\nSEK\xa08,493"  (double newline + non-breaking space)
     if not data.get("price_sek"):
-        m = re.search(
-            r"(?<!\w)Rent\n\n\s*SEK[\s\xa0]*([\d,\xa0\s]+)", text, re.IGNORECASE)
-        if m:
-            try:
-                val = int(re.sub(r"[,\s\xa0]", "", m.group(1)))
-                if 1_000 < val < 200_000:
-                    data["price_sek"] = val
-            except ValueError:
-                pass
+        # Try both "Rent" and "Monthly cost" patterns
+        for label in ("Rent", "Monthly cost"):
+            # Pattern with double newline (original format)
+            m = re.search(
+                rf"(?<!\w){label}\n\n\s*SEK[\s\xa0]*([\d,\xa0\s]+)", text, re.IGNORECASE)
+            if not m:
+                # Pattern with single newline (alternative format)
+                m = re.search(
+                    rf"(?<!\w){label}\n\s*SEK[\s\xa0]*([\d,\xa0\s]+)", text, re.IGNORECASE)
+            if m:
+                try:
+                    val = int(re.sub(r"[,\s\xa0]", "", m.group(1)))
+                    if 1_000 < val < 200_000:
+                        data["price_sek"] = val
+                        break
+                except ValueError:
+                    pass
 
     # ── Service fee: "Service fee\n\nSEK\xa0773" ─────────────────────────────
     if not data.get("service_fee_sek"):
@@ -721,21 +930,38 @@ def _parse_qasa_page_text(text: str, data: dict):
                     data["available_until"] = m.group(1)
                     break
 
-    # ── Comprehensive amenity detection ──────────────────────────────────────
-    detected = []
-    for key, keywords in QASA_AMENITIES:
-        if any(kw in tl for kw in keywords):
-            detected.append(key)
+    # ── Amenities from page text (fallback) ───────────────────────────────────
+    # Start with any DOM-detected amenities
+    detected = data.get("_detected_amenities", [])
+
+    # Only add text-based amenities if we didn't find any from DOM
+    if not detected:
+        for key, keywords in QASA_AMENITIES:
+            if any(kw in tl for kw in keywords):
+                detected.append(key)
+                logger.info(f"Found text amenity: {key}")
+
     if detected:
         existing = data.get("amenities") or []
         data["amenities"] = list(dict.fromkeys(existing + detected))
+        logger.info(f"Final detected amenities: {detected}")
+    else:
+        logger.info("No amenities detected from DOM or page text")
+
+    # Clean up temporary field
+    if "_detected_amenities" in data:
+        del data["_detected_amenities"]
+
     # Sync legacy boolean fields
     amenities_set = set(data.get("amenities") or [])
     data["has_washing_machine"] = "washing_machine" in amenities_set
     data["has_dryer"] = "tumble_dryer" in amenities_set
     data["has_dishwasher"] = "dishwasher" in amenities_set
 
-    # ── House rules ───────────────────────────────────────────────────────────
+    logger.info(f"Final amenities list: {data.get('amenities')}")
+    logger.info(f"Final amenities count: {len(data.get('amenities', []))}")
+
+    # ── House rules ─────────────────────────────────────────────────────────────
     rules = data.get("house_rules") or {}
     if "pets_allowed" not in rules:
         rules["pets_allowed"] = "no pets" not in tl
@@ -792,6 +1018,19 @@ def _dismiss_cookie_banner(page):
 
 def _extract_page_data(page, url: str) -> dict:
     """Run full extraction pipeline on an already-loaded page."""
+
+    # Check if listing is unavailable first
+    try:
+        page_text = page.inner_text("body") or ""
+        if "This listing has been archived" in page_text:
+            logger.info(f"Skipping archived listing: {url}")
+            return None
+        elif "This home has been rented out" in page_text:
+            logger.info(f"Skipping rented out listing: {url}")
+            return None
+    except Exception:
+        pass
+
     data: dict = {"url": url, "source": "qasa"}
 
     # 1. Try __NEXT_DATA__
@@ -877,131 +1116,13 @@ def extract_from_url(url: str) -> dict | None:
             _dismiss_cookie_banner(page)
             data = _extract_page_data(page, url)
             browser.close()
+
+            # Return None for archived listings
+            if data is None:
+                return None
+
             return data
 
     except Exception as e:
         logger.error(f"extract_from_url failed for {url}: {e}")
         return None
-
-
-def _build_search_url(min_price=None, max_price=None, min_rooms=None, max_rooms=None) -> str:
-    params = []
-    if min_price:
-        params.append(f"minRent={min_price}")
-    if max_price:
-        params.append(f"maxRent={max_price}")
-    if min_rooms:
-        params.append(f"minRooms={min_rooms}")
-    if max_rooms:
-        params.append(f"maxRooms={max_rooms}")
-    return SEARCH_BASE_URL + ("?" + "&".join(params) if params else "")
-
-
-def scrape_qasa(
-    min_price=None,
-    max_price=None,
-    min_rooms=None,
-    max_rooms=None,
-    max_listings=MAX_LISTINGS,
-) -> list:
-    """
-    Bulk-scrape Qasa listings from the search page.
-
-    Returns a list of listing dicts (up to max_listings).
-    Respects robots.txt spirit: 2-5 s delay between page loads,
-    capped at 50 listings per run.
-    """
-    try:
-        from playwright.sync_api import sync_playwright
-    except ImportError:
-        logger.error(
-            "Playwright not installed. Run: playwright install chromium")
-        return []
-
-    search_url = _build_search_url(min_price, max_price, min_rooms, max_rooms)
-    logger.info(f"Starting Qasa bulk scrape: {search_url}")
-
-    listing_urls: list[str] = []
-    listings: list[dict] = []
-
-    # Link patterns that point to individual listings
-    LINK_PATTERNS = [
-        'a[href*="/listing/"]',
-        'a[href*="/bostad/"]',
-        'a[href*="/home/"]',
-        '[data-testid*="listing"] a',
-        '[class*="listing-card"] a',
-        '[class*="HomeCard"] a',
-        '[class*="home-card"] a',
-    ]
-
-    def collect_urls(page):
-        for pattern in LINK_PATTERNS:
-            els = page.query_selector_all(pattern)
-            for el in els:
-                href = el.get_attribute("href") or ""
-                if href and not href.startswith("http"):
-                    href = "https://qasa.se" + href
-                if href and href not in listing_urls:
-                    listing_urls.append(href)
-            if listing_urls:
-                break
-
-    try:
-        with sync_playwright() as p:
-            browser, context = _new_browser_context(p)
-            page = context.new_page()
-
-            # ── Step 1: collect listing URLs ──────────────────────────────
-            try:
-                _goto(page, search_url)
-            except Exception as e:
-                logger.error(f"Could not load Qasa search page: {e}")
-                browser.close()
-                return []
-
-            _dismiss_cookie_banner(page)
-            page.wait_for_timeout(2_000)
-
-            collect_urls(page)
-
-            # Scroll to trigger lazy-loading of more cards
-            for _ in range(6):
-                if len(listing_urls) >= max_listings:
-                    break
-                page.evaluate("window.scrollBy(0, window.innerHeight * 2)")
-                page.wait_for_timeout(1_500)
-                collect_urls(page)
-
-            listing_urls = listing_urls[:max_listings]
-            logger.info(f"Found {len(listing_urls)} listing URLs to process")
-
-            if not listing_urls:
-                logger.warning(
-                    "No listing URLs found. Qasa's DOM may have changed — "
-                    "check selector patterns in scrapers/qasa.py."
-                )
-                browser.close()
-                return []
-
-            # ── Step 2: visit each listing page ──────────────────────────
-            for i, listing_url in enumerate(listing_urls):
-                logger.info(
-                    f"Scraping {i + 1}/{len(listing_urls)}: {listing_url}")
-                try:
-                    _goto(page, listing_url)
-                    data = _extract_page_data(page, listing_url)
-                    listings.append(data)
-                except Exception as e:
-                    logger.warning(f"Failed to scrape {listing_url}: {e}")
-
-                if i < len(listing_urls) - 1:
-                    _random_delay()
-
-            browser.close()
-
-    except Exception as e:
-        logger.error(f"Bulk scrape failed: {e}")
-
-    logger.info(f"Scrape complete: {len(listings)} listings extracted")
-    return listings

@@ -124,8 +124,8 @@ Click **+ Add Listing** → paste a `qasa.com` URL → the app extracts all deta
 **Option B — Manual entry:**
 Click **+ Add Listing** → switch to "Enter manually" → fill in the form.
 
-**Option C — Bulk scrape:**
-Click **Refresh** on the listings page → scrapes up to 50 listings from Qasa using your budget/rooms settings.
+**Option C — Manual Qasa links:**
+Click **+ Add Listing** → paste Qasa URLs → scrape individual listings with all details.
 
 ### Scoring listings
 

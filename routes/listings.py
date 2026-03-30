@@ -189,6 +189,7 @@ def save_listing():
     is_shared_str = request.form.get("is_shared", "")
     is_shared = True if is_shared_str == "true" else (
         False if is_shared_str == "false" else None)
+    contract_type = request.form.get("contract_type", "").strip() or None
 
     # Rent breakdown
     try:
@@ -251,6 +252,7 @@ def save_listing():
         home_type=home_type,
         furnishing=furnishing,
         is_shared=is_shared,
+        contract_type=contract_type,
         service_fee_sek=service_fee_sek,
         electricity_included=electricity_included,
         deposit_months=deposit_months,
@@ -316,7 +318,31 @@ def extract_url():
 
     result = extract_from_url(url)
     if result is None:
-        return jsonify({"error": "Could not extract listing data from this URL. Try entering manually."}), 422
+        # Check if it's archived or rented out by checking the page content
+        try:
+            from playwright.sync_api import sync_playwright
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True)
+                context = browser.new_context()
+                page = context.new_page()
+                try:
+                    page.goto(url, wait_until="domcontentloaded",
+                              timeout=10_000)
+                    page_text = page.inner_text("body") or ""
+                    if "This listing has been archived" in page_text:
+                        error_msg = "This listing has been archived and is no longer available."
+                    elif "This home has been rented out" in page_text:
+                        error_msg = "This home has been rented out and is no longer available."
+                    else:
+                        error_msg = "Could not extract listing data from this URL. Try entering manually."
+                except Exception:
+                    error_msg = "Could not extract listing data from this URL. Try entering manually."
+                finally:
+                    browser.close()
+        except Exception:
+            error_msg = "Could not extract listing data from this URL. Try entering manually."
+
+        return jsonify({"error": error_msg}), 422
 
     return jsonify(result)
 
@@ -358,11 +384,43 @@ def bulk_import():
             continue
 
         if item is None:
-            results.append({"url": url, "status": "error",
-                           "error": "Could not extract listing data"})
+            # Check if it's archived or rented out by checking the page content
+            try:
+                from playwright.sync_api import sync_playwright
+                with sync_playwright() as p:
+                    browser = p.chromium.launch(headless=True)
+                    context = browser.new_context()
+                    page = context.new_page()
+                    try:
+                        page.goto(url, wait_until="domcontentloaded",
+                                  timeout=10_000)
+                        page_text = page.inner_text("body") or ""
+                        if "This listing has been archived" in page_text:
+                            error_msg = "This listing has been archived and is no longer available."
+                        elif "This home has been rented out" in page_text:
+                            error_msg = "This home has been rented out and is no longer available."
+                        else:
+                            error_msg = "Could not extract listing data"
+                    except Exception:
+                        error_msg = "Could not extract listing data"
+                    finally:
+                        browser.close()
+            except Exception:
+                error_msg = "Could not extract listing data"
+
+            results.append({"url": url, "status": "error", "error": error_msg})
             continue
 
         amenities = item.get("amenities") or []
+
+        # Debug logging for re-scrap issues
+        logger.info(f"Processing URL: {url}")
+        logger.info(f"Extracted contract_type: {item.get('contract_type')}")
+        logger.info(f"Extracted amenities count: {len(amenities)}")
+        logger.info(f"Extracted amenities: {amenities}")
+        logger.info(
+            f"Extracted service_fee_sek: {item.get('service_fee_sek')}")
+
         listing = Listing(
             source="qasa",
             url=item.get("url") or url,
@@ -383,6 +441,7 @@ def bulk_import():
             home_type=item.get("home_type"),
             furnishing=item.get("furnishing"),
             is_shared=item.get("is_shared"),
+            contract_type=item.get("contract_type"),
             service_fee_sek=item.get("service_fee_sek"),
             electricity_included=item.get("electricity_included"),
             deposit_months=item.get("deposit_months"),
@@ -392,6 +451,11 @@ def bulk_import():
         # Upsert: update existing listing if URL already exists, otherwise insert
         existing = Listing.query.filter_by(url=item.get("url") or url).first()
         if existing:
+            logger.info(f"Updating existing listing: {url}")
+            logger.info(f"New contract_type: {item.get('contract_type')}")
+            logger.info(f"New amenities: {item.get('amenities')}")
+            logger.info(f"New service_fee_sek: {item.get('service_fee_sek')}")
+
             existing.title = item.get("title", existing.title)
             existing.description = item.get(
                 "description", existing.description)
@@ -414,6 +478,8 @@ def bulk_import():
             existing.furnishing = item.get("furnishing") or existing.furnishing
             existing.is_shared = item.get("is_shared") if item.get(
                 "is_shared") is not None else existing.is_shared
+            existing.contract_type = item.get(
+                "contract_type") or existing.contract_type
             existing.service_fee_sek = item.get(
                 "service_fee_sek") or existing.service_fee_sek
             existing.electricity_included = item.get("electricity_included") if item.get(
@@ -557,86 +623,3 @@ def debug_url():
         result["error"] = str(e)
 
     return jsonify(result)
-
-
-# ── Bulk Qasa scrape ──────────────────────────────────────────────────────────
-
-@listings_bp.route("/scrape", methods=["POST"])
-def run_scrape():
-    """
-    Kick off a synchronous Qasa bulk scrape using current user settings as filters.
-    Returns JSON with counts: {new, duplicates, errors, total}.
-    This may take several minutes depending on how many listings are found.
-    """
-    try:
-        from scrapers.qasa import scrape_qasa
-    except ImportError as e:
-        return jsonify({"error": f"Scraper not available: {e}"}), 503
-
-    settings = UserSettings.query.first()
-    min_price = settings.budget_min if settings else None
-    max_price = settings.budget_max if settings else None
-    min_rooms = settings.min_rooms if settings else None
-    max_rooms = settings.max_rooms if settings else None
-
-    listings_data = scrape_qasa(min_price, max_price, min_rooms, max_rooms)
-
-    new_count = 0
-    duplicate_count = 0
-    error_count = 0
-
-    for item in listings_data:
-        listing = Listing(
-            source="qasa",
-            url=item.get("url"),
-            title=item.get("title", ""),
-            description=item.get("description", ""),
-            address=item.get("address", ""),
-            district=item.get("district", ""),
-            lat=item.get("lat"),
-            lng=item.get("lng"),
-            price_sek=item.get("price_sek") or 0,
-            rooms=item.get("rooms") or 1,
-            floor=item.get("floor"),
-            size_sqm=item.get("size_sqm"),
-            available_until=item.get("available_until"),
-            amenities=item.get("amenities") or [],
-            has_washing_machine=item.get("has_washing_machine", False),
-            has_dryer=item.get("has_dryer", False),
-            has_dishwasher=item.get("has_dishwasher", False),
-            home_type=item.get("home_type"),
-            furnishing=item.get("furnishing"),
-            is_shared=item.get("is_shared"),
-            service_fee_sek=item.get("service_fee_sek"),
-            electricity_included=item.get("electricity_included"),
-            deposit_months=item.get("deposit_months"),
-            house_rules=item.get("house_rules") or {},
-            images=item.get("images") or [],
-        )
-        db.session.add(listing)
-        try:
-            db.session.commit()
-            new_count += 1
-        except IntegrityError:
-            db.session.rollback()
-            duplicate_count += 1
-        except Exception as e:
-            db.session.rollback()
-            logger.error(f"Failed to save scraped listing: {e}")
-            error_count += 1
-
-    # Enrich all newly-saved listings in background
-    if new_count > 0:
-        try:
-            from flask import current_app
-            from services.enrichment import enrich_all_async
-            enrich_all_async(current_app._get_current_object())
-        except Exception as e:
-            logger.warning(f"Could not start bulk enrichment: {e}")
-
-    return jsonify({
-        "new": new_count,
-        "duplicates": duplicate_count,
-        "errors": error_count,
-        "total": len(listings_data),
-    })
