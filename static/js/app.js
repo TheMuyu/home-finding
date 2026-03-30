@@ -710,7 +710,35 @@ function initDistrictFilters() {
 }
 
 /* =====================================================================
-   8. AI LANGUAGE TOGGLE
+   8. AI ANALYSIS TOGGLE
+   ===================================================================== */
+window._aiAnalysisVisible = {}; // listingId → boolean
+
+function toggleAiAnalysis(listingId) {
+  const current = window._aiAnalysisVisible[listingId] || false;
+  const next = !current;
+  window._aiAnalysisVisible[listingId] = next;
+
+  const aiSection = document.getElementById(`ai-section-${listingId}`);
+  const toggleBtn = document.getElementById(`ai-analysis-toggle-${listingId}`);
+
+  if (aiSection) {
+    aiSection.classList.toggle('hidden', !next);
+  }
+
+  if (toggleBtn) {
+    if (next) {
+      toggleBtn.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'text-gray-500', 'dark:text-gray-400');
+      toggleBtn.classList.add('bg-indigo-100', 'dark:bg-indigo-900/40', 'text-indigo-600', 'dark:text-indigo-400');
+    } else {
+      toggleBtn.classList.remove('bg-indigo-100', 'dark:bg-indigo-900/40', 'text-indigo-600', 'dark:text-indigo-400');
+      toggleBtn.classList.add('bg-gray-100', 'dark:bg-gray-700', 'text-gray-500', 'dark:text-gray-400');
+    }
+  }
+}
+
+/* =====================================================================
+   9. AI LANGUAGE TOGGLE
    ===================================================================== */
 window._aiLang = {}; // listingId → 'en' | 'tr'
 

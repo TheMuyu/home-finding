@@ -140,6 +140,12 @@
               {% else %}bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300{% endif %}">
             AI {{ listing.ai_score }}
           </span>
+          <button onclick="event.stopPropagation(); toggleAiAnalysis({{ listing.id }})"
+            id="ai-analysis-toggle-{{ listing.id }}"
+            class="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors font-medium"
+            title="Toggle AI Analysis panel">
+            AI Analysis
+          </button>
           {% else %}
           <button onclick="event.stopPropagation(); scoreListing({{ listing.id }}, this)"
             id="score-btn-{{ listing.id }}"
@@ -224,7 +230,7 @@
 
     <!-- AI Analysis -->
     {% if listing.ai_score is not none %}
-    <div class="mb-4 bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-100 dark:border-gray-700"
+    <div class="mb-4 bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-100 dark:border-gray-700 hidden"
       id="ai-section-{{ listing.id }}">
       <div class="flex items-center gap-2 mb-2 flex-wrap">
         <span class="text-sm font-semibold text-gray-900 dark:text-white">AI Analysis</span>
@@ -449,22 +455,7 @@
     {% endif %}
     {% endif %}
 
-    <!-- District info -->
-    {% if district_info %}
-    <div class="mb-4 bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-100 dark:border-gray-700">
-      <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{
-        listing.district }}</p>
-      {% if district_info.description %}
-      <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">{{ district_info.description }}</p>
-      {% endif %}
-      {% if district_info.safety_note %}
-      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ district_info.safety_note }}</p>
-      {% endif %}
-      {% if district_info.avg_price_range %}
-      <p class="text-xs text-gray-400 mt-1">Avg rent: {{ district_info.avg_price_range }} SEK/mo</p>
-      {% endif %}
-    </div>
-    {% endif %}
+    <!-- District info removed - not relevant for individual listings -->
 
     <!-- House rules -->
     {% set rules = listing.house_rules or {} %}
